@@ -1,0 +1,120 @@
+// Antetul dosarului deschis: titlu + alertă, cifrele cheie și fișa dosarului. Proprietar: Om4.
+import type { ReactNode } from "react";
+import { ArrowLeft, OctagonAlert } from "lucide-react";
+import type { Case, CreditorType } from "../types/contracts";
+import { formatDate, formatRon } from "../lib/ui";
+import { StatusChip } from "./StatusChip";
+
+const CREDITOR_LABEL: Record<CreditorType, string> = {
+  INTRETINERE: "Pensie de întreținere",
+  FISCAL: "Creanță fiscală",
+  COMERCIAL: "Creanță comercială",
+};
+
+interface Props {
+  data: Case;
+  // true cât timp agenții încă rulează: statusul, alerta și sumele nu se arată încă
+  pending: boolean;
+  onBack: () => void;
+}
+
+export function CaseHeader({ data, pending, onBack }: Props) {
+  const open = pending ? [] : data.exceptions.filter((e) => !e.resolved);
+
+  return (
+    <div className="pt-6">
+      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink">
+        <ArrowLeft size={16} aria-hidden />
+        Toate dosarele
+      </button>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3">
+        <h1 className="display text-[2rem]">{data.order?.debtor_name ?? data.customer?.full_name ?? "Debitor neidentificat"}</h1>
+        {!pending && <StatusChip status={data.status} />}
+      </div>
+
+      {open.length > 0 && (
+        <div role="alert" className="mt-5 flex gap-3.5 rounded-md border border-danger/40 bg-danger-soft px-5 py-4">
+          <OctagonAlert size={20} strokeWidth={2.25} className="mt-0.5 shrink-0 text-danger" aria-hidden />
+          <div className="min-w-0">
+            <p className="font-bold text-danger-ink">
+              {open.length === 1 ? "Procesarea automată a fost oprită" : `Procesarea automată a fost oprită: ${open.length} probleme`}
+            </p>
+            <ul className="mt-1 space-y-1 text-sm">
+              {open.map((e) => (
+                <li key={e.code + e.message}>{e.message}</li>
+              ))}
+            </ul>
+            <p className="mt-2 text-sm font-semibold text-danger-ink">Nu s-a blocat nicio sumă. Un ofițer trebuie să verifice dosarul.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Figure({ label, value, note, tone = "plain" }: { label: string; value: string; note?: string; tone?: "plain" | "hold" | "keep" }) {
+  const swatch = tone === "hold" ? "bg-ink" : tone === "keep" ? "bg-sun ring-1 ring-ink/15" : "";
+  return (
+    <div className="rounded-lg bg-paper px-5 py-4 ring-1 ring-line">
+      <dt className="flex items-center gap-2 text-sm text-muted">
+        {swatch && <span className={`h-2.5 w-2.5 rounded-full ${swatch}`} aria-hidden />}
+        {label}
+      </dt>
+      <dd className="display mt-1.5 text-2xl">{value}</dd>
+      {note && <dd className="mt-1.5 text-xs text-muted">{note}</dd>}
+    </div>
+  );
+}
+
+export function CaseFigures({ data, pending }: { data: Case; pending: boolean }) {
+  const d = data.decision;
+  const show = !pending && d;
+  const blocked = !pending && data.exceptions.some((e) => !e.resolved);
+  return (
+    <dl className="grid gap-3 sm:grid-cols-3">
+      <Figure label="Total de recuperat" value={formatRon(data.order?.total_due)} />
+      <Figure
+        label="Se indisponibilizează"
+        tone="hold"
+        value={show ? formatRon(d.amount_to_hold) : "—"}
+        note={pending ? "Se calculează…" : blocked ? "Nimic blocat până la verificare" : "Transferat în contul de consemnare"}
+      />
+      <Figure label="Rămâne clientului" tone="keep" value={show ? formatRon(d.amount_protected) : "—"} note={show ? "Protejat conform art. 729 CPC" : undefined} />
+    </dl>
+  );
+}
+
+function Fact({ label, children, wide = false }: { label: string; children: ReactNode; wide?: boolean }) {
+  return (
+    <div className={`min-w-0 ${wide ? "col-span-2" : ""}`}>
+      <dt className="text-xs text-muted">{label}</dt>
+      <dd className="mt-0.5 text-sm font-semibold break-words">{children ?? "—"}</dd>
+    </div>
+  );
+}
+
+export function CaseFacts({ data }: { data: Case }) {
+  const o = data.order;
+  return (
+    <section aria-labelledby="facts-title" className="rounded-lg bg-paper ring-1 ring-line">
+      <h2 id="facts-title" className="display border-b border-line px-5 py-3.5 text-base">
+        Fișa dosarului
+      </h2>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-5 px-5 py-5 md:grid-cols-4">
+        <Fact label="Număr dosar">{o?.case_number}</Fact>
+        <Fact label="Data emiterii">{o?.issue_date ? formatDate(o.issue_date) : null}</Fact>
+        <Fact label="Emitent" wide>
+          {o?.issuer_name}
+        </Fact>
+        <Fact label="Creditor" wide>
+          {o?.creditor_name}
+        </Fact>
+        <Fact label="Tip creanță">{o ? CREDITOR_LABEL[o.creditor_type] : null}</Fact>
+        <Fact label="CNP debitor">{o?.debtor_id ? <span className="font-mono text-[13px] font-medium">{o.debtor_id}</span> : null}</Fact>
+        <Fact label="Debit principal">{o ? formatRon(o.principal) : null}</Fact>
+        <Fact label="Cheltuieli executare">{o ? formatRon(o.enforcement_costs) : null}</Fact>
+      </dl>
+    </section>
+  );
+}
