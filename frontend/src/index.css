@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sun: #fff200;
+  --color-sun-soft: #fffbd1;
+  --color-ink: #000000;
+  --color-paper: #ffffff;
+  --color-canvas: #f6f6f3;
+  --color-line: #e3e3de;
+  --color-line-strong: #c9c9c3;
+  --color-muted: #63635e;
+  /* Roșul e rezervat strict pentru probleme (excepții, eșecuri) */
+  --color-danger: #d92d20;
+  --color-danger-soft: #fef3f2;
+  --color-danger-ink: #912018;
+  --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    font-size: 15px;
+  }
+  body {
+    @apply bg-paper text-ink antialiased;
+  }
+  ::selection {
+    background: var(--color-sun);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+}
+
+/* Vocea de display: Schibsted Grotesk foarte gros, lățime normală */
+@utility display {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
