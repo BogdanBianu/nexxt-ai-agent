@@ -1,0 +1,66 @@
+{
+  "scenario_id": "S2",
+  "title": "Mamă în concediu creștere copil — Venituri 100% protejate",
+  "description": "Contul conține doar venituri 100% protejate conform art. 729 CPC: indemnizație creștere copil (3.500 RON) și alocație de stat (719 RON). Sold inițial 0 RON. Datorie 5.000 RON. Sistemul corect indisponibilizează 0 RON.",
+  "document": {
+    "document_id": "DOC-S2",
+    "filename": "adresa_infiintare_poprire_BEJ_2200_2026.pdf",
+    "received_at": "2026-10-28T09:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC RADU ELENA\nDosarul de executare nr. 2200/2026\nData: 24.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 2200/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: MARINESCU IOANA, CNP: 2900312400028\nCreditor: PROVIDENT FINANCIAL IFN S.A.\nNatura creanței: Comercială\nDebit principal: 4.500,00 RON\nCheltuieli de executare: 500,00 RON\nTotal de recuperat: 5.000,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO49AAAA1B31007593840000.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": "pdfs/S2.pdf"
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-002",
+        "full_name": "MARINESCU IOANA",
+        "national_id": "2900312400028",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Florilor nr. 5, Timișoara"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO49AAAA1B31007593840000",
+        "customer_id": "CUST-002",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0.0,
+        "current_balance": 4219.0
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S2-01",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-10",
+        "direction": "CREDIT",
+        "amount": 3500.0,
+        "counterparty_name": "AGENTIA PENTRU PLATI SI INSPECTIE SOCIALA",
+        "counterparty_iban": "RO88TREZ70024680120XXXXX",
+        "description": "Indemnizatie crestere copil"
+      },
+      {
+        "tx_id": "TX-S2-02",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 719.0,
+        "counterparty_name": "AGENTIA PENTRU PLATI SI INSPECTIE SOCIALA",
+        "counterparty_iban": "RO88TREZ70024680120XXXXX",
+        "description": "Alocatie de stat copil"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 0.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

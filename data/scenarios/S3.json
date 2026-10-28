@@ -1,0 +1,92 @@
+{
+  "scenario_id": "S3",
+  "title": "Popriri concurente — Pensie alimentară peste poprire comercială",
+  "description": "Salariat cu 6.000 RON net. Are deja o poprire comercială care reține 2.000 RON/lună (1/3). Vine a doua poprire pentru pensie alimentară (ÎNTREȚINERE). Plafonul cumulat de 1/2 (3.000 RON) minus cele 2.000 deja reținute lasă doar 1.000 RON pentru noua poprire. Se declanșează excepția E04.",
+  "document": {
+    "document_id": "DOC-S3",
+    "filename": "adresa_infiintare_poprire_BEJ_3300_2026.pdf",
+    "received_at": "2026-10-28T10:30:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC VOICU ALEXANDRU\nDosarul de executare nr. 3300/2026\nData: 22.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn dosarul de executare nr. 3300/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor:\nDebitor: POPA GEORGE, CNP: 1851209000015\nCreditor: POPA MARIA\nNatura creanței: Întreținere (pensie alimentară minor)\nDebit principal: 12.000,00 RON\nCheltuieli de executare: 0,00 RON\nTotal de recuperat: 12.000,00 RON\n\nCont consemnare IBAN: RO49AAAA1B31007593840000.\nSemnătură și ștampilă L.S.",
+    "pdf_path": "pdfs/S3.pdf"
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-003",
+        "full_name": "POPA GEORGE",
+        "national_id": "1851209000015",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Libertății nr. 42, Brașov"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO49AAAA1B31007593840000",
+        "customer_id": "CUST-003",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0.0,
+        "current_balance": 6000.0
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S3-08",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-08-15",
+        "direction": "CREDIT",
+        "amount": 6000.0,
+        "counterparty_name": "SC MEGASOFT SRL",
+        "counterparty_iban": null,
+        "description": "Plata salariu luna Iulie"
+      },
+      {
+        "tx_id": "TX-S3-09",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-09-15",
+        "direction": "CREDIT",
+        "amount": 6000.0,
+        "counterparty_name": "SC MEGASOFT SRL",
+        "counterparty_iban": null,
+        "description": "Plata salariu luna August"
+      },
+      {
+        "tx_id": "TX-S3-10",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 6000.0,
+        "counterparty_name": "SC MEGASOFT SRL",
+        "counterparty_iban": null,
+        "description": "Plata salariu luna Septembrie"
+      }
+    ],
+    "active_garnishments": [
+      {
+        "garnishment_id": "GARN-001",
+        "customer_id": "CUST-003",
+        "case_number": "1122/2025",
+        "issuer_name": "BEJ Stanescu Dan",
+        "creditor_name": "ALPHA BANK S.A.",
+        "creditor_type": "COMERCIAL",
+        "total_due": 25000.0,
+        "amount_recovered": 8000.0,
+        "monthly_periodic_take": 2000.0,
+        "registered_at": "2025-06-10T08:00:00Z",
+        "active": true
+      }
+    ]
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "EXCEPTION_FLAGGED",
+    "amount_to_hold": 1000.0,
+    "exception_codes": [
+      "E04"
+    ],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

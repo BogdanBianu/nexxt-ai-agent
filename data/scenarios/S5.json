@@ -1,0 +1,58 @@
+{
+  "scenario_id": "S5",
+  "title": "Eroare în adresa executorului — CNP invalid",
+  "description": "Adresa de poprire conține un CNP cu cifra de control greșită (1850615400019 în loc de 1850615400011). Agentul de extragere detectează eroarea determinist și ridică excepția blocantă E01. Dosarul este trimis către Human-in-the-Loop fără a bloca sume.",
+  "document": {
+    "document_id": "DOC-S5",
+    "filename": "adresa_infiintare_poprire_BEJ_5500_2026.pdf",
+    "received_at": "2026-10-28T11:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC TUDOR MARIAN\nDosarul de executare nr. 5500/2026\nData: 20.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 5500/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: IONESCU MIHAI, CNP: 1850615400019\nCreditor: CREDIT EUROPE BANK S.A.\nNatura creanței: Comercială\nDebit principal: 7.200,00 RON\nCheltuieli de executare: 800,00 RON\nTotal de recuperat: 8.000,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO49AAAA1B31007593840000.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": "pdfs/S5.pdf"
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-005",
+        "full_name": "IONESCU MIHAI",
+        "national_id": "1850615400011",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Primăverii nr. 10, București"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO49AAAA1B31007593840000",
+        "customer_id": "CUST-005",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0.0,
+        "current_balance": 5000.0
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S5-01",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 5000.0,
+        "counterparty_name": "SC TECH SOLUTIONS SRL",
+        "counterparty_iban": null,
+        "description": "Plata salariu luna Septembrie"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "EXCEPTION_FLAGGED",
+    "amount_to_hold": 0.0,
+    "exception_codes": [
+      "E01"
+    ],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

@@ -6,10 +6,22 @@
     "label": "ANPIS / AJPIS — Alocație de stat / Indemnizație"
   },
   {
+    "match": "AGENTIA NATIONALA PENTRU PLATI SI INSPECTIE SOCIALA",
+    "iban": null,
+    "default_category": "ALOCATIE",
+    "label": "ANPIS — Agenția Națională pentru Plăți și Inspecție Socială"
+  },
+  {
     "match": "AJPIS",
     "iban": null,
     "default_category": "ALOCATIE",
     "label": "Agenția Județeană pentru Plăți și Inspecție Socială"
+  },
+  {
+    "match": "ANPIS",
+    "iban": null,
+    "default_category": "ALOCATIE",
+    "label": "ANPIS — Agenția Națională pentru Plăți și Inspecție Socială"
   },
   {
     "match": "CASA NATIONALA DE PENSII",
@@ -24,9 +36,87 @@
     "label": "Casa Județeană de Pensii"
   },
   {
+    "match": "CNPP",
+    "iban": null,
+    "default_category": "PENSIE",
+    "label": "Casa Națională de Pensii Publice (CNPP)"
+  },
+  {
+    "match": "CASA SECTORIALA DE PENSII",
+    "iban": null,
+    "default_category": "PENSIE",
+    "label": "Casa Sectorială de Pensii (MAI / MApN / SRI)"
+  },
+  {
     "match": "PRIMARIA",
     "iban": null,
     "default_category": "AJUTOR_SOCIAL",
     "label": "Primărie — Ajutor social / Venit minim de incluziune"
+  },
+  {
+    "match": "DGASPC",
+    "iban": null,
+    "default_category": "AJUTOR_SOCIAL",
+    "label": "Direcția Generală de Asistență Socială și Protecția Copilului"
+  },
+  {
+    "match": "DIRECTIA GENERALA DE ASISTENTA SOCIALA",
+    "iban": null,
+    "default_category": "AJUTOR_SOCIAL",
+    "label": "DGASPC — Asistență Socială și Protecția Copilului"
+  },
+  {
+    "match": "DIRECTIA DE ASISTENTA SOCIALA",
+    "iban": null,
+    "default_category": "AJUTOR_SOCIAL",
+    "label": "Direcția de Asistență Socială Comunitară"
+  },
+  {
+    "match": "AGENTIA NATIONALA PENTRU OCUPAREA FORTEI DE MUNCA",
+    "iban": null,
+    "default_category": "AJUTOR_SOCIAL",
+    "label": "ANOFM — Indemnizație șomaj"
+  },
+  {
+    "match": "ANOFM",
+    "iban": null,
+    "default_category": "AJUTOR_SOCIAL",
+    "label": "ANOFM — Agenția Națională pentru Ocuparea Forței de Muncă"
+  },
+  {
+    "match": "AJOFM",
+    "iban": null,
+    "default_category": "AJUTOR_SOCIAL",
+    "label": "AJOFM — Agenția Județeană pentru Ocuparea Forței de Muncă"
+  },
+  {
+    "match": "UNIVERSITATEA",
+    "iban": null,
+    "default_category": "ALOCATIE",
+    "label": "Universitate — Bursă de merit / studii / socială"
+  },
+  {
+    "match": "ACADEMIA DE STUDII ECONOMICE",
+    "iban": null,
+    "default_category": "ALOCATIE",
+    "label": "ASE București — Bursă de studii"
+  },
+  {
+    "match": "UNIVERSITATEA POLITEHNICA",
+    "iban": null,
+    "default_category": "ALOCATIE",
+    "label": "Universitatea Politehnica — Bursă de studii"
+  },
+  {
+    "match": "INSPECTORATUL SCOLAR",
+    "iban": null,
+    "default_category": "ALOCATIE",
+    "label": "Inspectorat Școlar Județean — Burse școlare"
+  },
+  {
+    "match": "AUTORITATEA NATIONALA PENTRU PERSOANELE CU DIZABILITATI",
+    "iban": null,
+    "default_category": "AJUTOR_SOCIAL",
+    "label": "ANPDPD — Indemnizație handicap / dizabilități"
   }
 ]

@@ -1,0 +1,45 @@
+{
+  "scenario_id": "S8",
+  "title": "Solicitare de la Inspectoratul de Poliție (Demo Platformă LexOps)",
+  "description": "Adresă oficială de la Inspectoratul General al Poliției Române într-un dosar penal. Router-ul o clasifică ca CERERE_AUTORITATE și o redirecționează automat către modulul 'autoritati' (în roadmap). Demonstrează capacitatea platformei LexOps de triaj multi-modul.",
+  "document": {
+    "document_id": "DOC-S8",
+    "filename": "adresa_igpr_dosar_penal_2026.pdf",
+    "received_at": "2026-10-28T13:00:00Z",
+    "content_type": "text/plain",
+    "text": "INSPECTORATUL GENERAL AL POLIȚIEI ROMÂNE\nDirecția de Investigare a Criminalității Economice\nDosar penal nr. 445566/P/2026\nData: 18.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nDepartamentul Juridic\n\nÎn DOSAR PENAL nr. 445566/P/2026 aflat pe rolul Parchetului de pe lângă Tribunalul București, vă solicităm comunicarea de urgență a următoarelor informații privind persoana:\nNume: VASILESCU DANIEL, CNP: 2901107000013\n\n1. Lista completă a conturilor bancare (curente, economii, depozite)\n2. Extrasele de cont pe ultimele 12 luni\n3. Operațiunile suspecte raportate către ONPCSB\n\nPrezenta solicitare este formulată în temeiul art. 170 Cod Procedură Penală.\nSemnătură și ștampilă oficială L.S.",
+    "pdf_path": "pdfs/S8.pdf"
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-008",
+        "full_name": "VASILESCU DANIEL",
+        "national_id": "2901107000013",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Calea Victoriei nr. 100, București"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO49AAAA1B31007593840000",
+        "customer_id": "CUST-008",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0.0,
+        "current_balance": 45000.0
+      }
+    ],
+    "transactions": [],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "CERERE_AUTORITATE",
+    "status": "ROUTED_TO_OTHER_MODULE",
+    "amount_to_hold": 0.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}
