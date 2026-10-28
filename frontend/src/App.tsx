@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "./api/client";
 import { AccountDissection } from "./components/AccountDissection";
 import { AgentPipeline } from "./components/AgentPipeline";
+import { ApprovalPanel } from "./components/ApprovalPanel";
 import { AppShell } from "./components/AppShell";
 import { CaseFacts, CaseFigures, CaseHeader } from "./components/CaseHeader";
 import { AuditTrail } from "./components/AuditTrail";
@@ -62,6 +63,17 @@ export default function App() {
       still
         ? "Decizia a fost aplicată, dar dosarul are în continuare probleme deschise."
         : `Decizie aplicată. Dosarul a fost recalculat: se indisponibilizează ${formatRon(updated.decision?.amount_to_hold ?? 0)}.`,
+    );
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  // Decizia finală a angajatului (aprobare / respingere): nu se mai recalculează nimic
+  const onDecided = useCallback((updated: Case) => {
+    setCurrent(updated);
+    setNotice(
+      updated.status === "REJECTED"
+        ? "Dosar respins. Nu se blochează nimic și nu se trimite răspunsul agentului."
+        : "Dosar aprobat. Adresa de răspuns poate fi descărcată din tab-ul Documente.",
     );
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
@@ -138,7 +150,9 @@ export default function App() {
                 {current && authority && <AuthorityFigures data={current} pending={!replayDone} />}
                 {current && insolvency && <InsolvencyFigures data={current} pending={!replayDone} />}
                 {current && !seizure && !authority && !insolvency && !lean && <CaseFigures data={current} pending={!replayDone} />}
+                {current && replayDone && current.status !== "EXCEPTION_FLAGGED" && <ApprovalPanel data={current} onDecided={onDecided} />}
                 {current && replayDone && <HitlWorkbench data={current} onUpdated={onReviewed} />}
+                {current && replayDone && current.status === "EXCEPTION_FLAGGED" && <ApprovalPanel data={current} onDecided={onDecided} />}
                 {current && seizure && replayDone && <SeizureLifecycle data={current} onOpen={(id) => open(id, false)} />}
                 {current && seizure && <SeizureFacts data={current} />}
                 {current && authority && replayDone && <AuthorityRequest data={current} />}

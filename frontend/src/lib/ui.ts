@@ -12,14 +12,16 @@ export const formatDate = (iso: string | null | undefined) =>
 export const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-export type StatusTone = "done" | "danger" | "neutral" | "working";
+export type StatusTone = "done" | "danger" | "neutral" | "working" | "approval";
 
 export const STATUS_STYLE: Record<CaseStatus, { label: string; tone: StatusTone }> = {
   RECEIVED: { label: "Primit", tone: "neutral" },
   PROCESSING: { label: "În procesare", tone: "working" },
-  AUTO_PROCESSED: { label: "Procesat automat", tone: "done" },
+  PENDING_APPROVAL: { label: "Conform, de aprobat", tone: "approval" },
+  AUTO_PROCESSED: { label: "Aprobat", tone: "done" },
   EXCEPTION_FLAGGED: { label: "Necesită verificare", tone: "danger" },
   LIFTED: { label: "Poprire ridicată", tone: "neutral" },
+  REJECTED: { label: "Respins", tone: "neutral" },
   ROUTED_TO_OTHER_MODULE: { label: "Redirecționat", tone: "neutral" },
   FAILED: { label: "Eșuat", tone: "danger" },
 };

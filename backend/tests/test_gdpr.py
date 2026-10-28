@@ -276,7 +276,7 @@ def test_client_mentioning_anspdcp_stays_a_client_request():
     text = app_main.load_scenario("S25").document.text.replace(
         "titular de cont bancar", "titular de cont bancar (știu că pot sesiza ANSPDCP)")
     case = _upload(text, "S25")
-    assert case["order"]["issuer_type"] == "PERSOANA_FIZICA" and case["status"] == "AUTO_PROCESSED"
+    assert case["order"]["issuer_type"] == "PERSOANA_FIZICA" and case["proposed_status"] == "AUTO_PROCESSED"
     assert "DREPTUL DE ACCES" in case["outcome"]["response_letter_text"]
 
 

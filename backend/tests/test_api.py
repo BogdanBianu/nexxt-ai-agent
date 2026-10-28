@@ -7,6 +7,13 @@ from app.main import app
 client = TestClient(app)
 
 
+def approve(case: dict) -> dict:
+    """Angajatul aprobă propunerea agentului: abia atunci poprirea / insolvența intră în registru."""
+    res = client.post(f"/api/cases/{case['case_id']}/approve", json={"reviewer": "ofiter"})
+    assert res.status_code == 200, res.text
+    return res.json()
+
+
 def test_rules_endpoint_exposes_registry():
     res = client.get("/api/rules")
     assert res.status_code == 200
@@ -23,8 +30,10 @@ def test_upload_txt_runs_pipeline_and_feeds_metrics():
     assert res.status_code == 200, res.text
     case = res.json()
     assert case["case_id"].startswith("CASE-UP-")
-    assert case["status"] == "AUTO_PROCESSED"
+    assert case["proposed_status"] == "AUTO_PROCESSED"
     assert case["decision"]["amount_to_hold"] == 5800.0
+    assert client.get(f"/api/cases/{case['case_id']}/response-pdf").status_code == 409   # încă neaprobat
+    assert approve(case)["status"] == "AUTO_PROCESSED"
 
     metrics = client.get("/api/metrics").json()
     assert metrics["total_cases"] >= 1
@@ -62,7 +71,7 @@ def test_audit_trail_has_agents_rules_and_hitl_review():
     case = client.post("/api/cases/from-scenario", json={"scenario_id": "S4"}).json()
     review = {"reviewer": "ofiter@test.ro", "overrides": [{"tx_id": "TX-S4-10", "category": "SALARIU"}],
               "resolve_codes": ["E06"]}
-    assert client.post(f"/api/cases/{case['case_id']}/review", json=review).json()["status"] == "AUTO_PROCESSED"
+    assert client.post(f"/api/cases/{case['case_id']}/review", json=review).json()["proposed_status"] == "AUTO_PROCESSED"
 
     audit = client.get(f"/api/cases/{case['case_id']}/audit").json()
     actions = {a["action"] for a in audit}
@@ -75,7 +84,7 @@ def test_sistare_keeps_router_doc_type_through_langgraph():
     case = client.post("/api/cases/from-scenario", json={"scenario_id": "S7"}).json()
     assert case["doc_type"] == "POPRIRE_SISTARE"
     assert case["order"]["doc_type"] == "POPRIRE_SISTARE"
-    assert case["status"] == "LIFTED"
+    assert case["proposed_status"] == "LIFTED"
     assert case["exceptions"] == []
 
 

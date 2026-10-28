@@ -9,7 +9,8 @@ from .api import (AiTelemetry, CaseSummary, CreateCaseFromScenario, ModuleInfo, 
                   RuleInfo, ScenarioInfo)
 from .banking import (Account, ActiveGarnishment, BankSnapshot, Customer, HoldInstruction,
                       PayerRegistryEntry, Transaction)
-from .case import AgentEvent, AuditEntry, Case, LlmUsage, ReviewAction, TxOverride
+from .case import (AgentEvent, ApprovalAction, ApprovalRecord, AuditEntry, Case, LlmUsage, ReviewAction,
+                   TxOverride)
 from .common import Money, money
 from .decision import (CaseOutcome, ClassifiedTransaction, CreditorAllocation, ExceptionFlag,
                        GarnishmentDecision, RuleApplication)

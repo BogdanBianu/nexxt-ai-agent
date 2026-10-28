@@ -21,6 +21,7 @@ const DOT: Record<StatusTone, string> = {
   danger: "bg-danger",
   working: "bg-sun ring-1 ring-ink",
   neutral: "bg-line-strong",
+  approval: "bg-sun-soft ring-1 ring-ink",
 };
 
 const plain = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();

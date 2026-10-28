@@ -30,13 +30,13 @@ def main() -> int:
 
         ok = (
             case.doc_type == sc.expected.doc_type
-            and case.status == sc.expected.status
+            and (case.proposed_status or case.status) == sc.expected.status   # verdictul agentului, înainte de aprobare
             and actual_hold == sc.expected.amount_to_hold
             and actual_exc == exp_exc
         )
         mark = "PASS" if ok else "FAIL"
         print(f"[{mark}] {sc.scenario_id} — {sc.title}")
-        print(f"       status={case.status.value} (exp {sc.expected.status.value}), "
+        print(f"       status={(case.proposed_status or case.status).value} (exp {sc.expected.status.value}), "
               f"hold={actual_hold} (exp {sc.expected.amount_to_hold}), "
               f"exc={actual_exc} (exp {exp_exc})")
 

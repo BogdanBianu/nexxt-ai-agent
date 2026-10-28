@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 
 from app import config
 from app.contracts import (
-    ActiveGarnishment, AgentName, AiTelemetry, AgentStatus, AuditEntry, BankSnapshot, DocType, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
+    ActiveGarnishment, AgentName, AiTelemetry, ApprovalAction, ApprovalRecord, AgentStatus, AuditEntry, BankSnapshot, DocType, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
     CustomerStatus,
     IncomingDocument, LlmUsage, ModuleInfo, PlatformMetrics, ReviewAction, RuleBookInfo, Scenario, ScenarioInfo,
 )
@@ -59,7 +59,8 @@ INSOLVENT: dict[str, tuple[str | None, str]] = {}
 _SCENARIO_ID = re.compile(r"[A-Za-z0-9_-]{1,40}")
 UPLOADS_DIR = config.DATA_DIR / "uploads"
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
-FINAL_AUTO_STATUSES = {CaseStatus.AUTO_PROCESSED, CaseStatus.LIFTED}
+FINAL_AUTO_STATUSES = {CaseStatus.AUTO_PROCESSED, CaseStatus.LIFTED}   # doar după aprobarea angajatului
+REJECTABLE_STATUSES = {CaseStatus.PENDING_APPROVAL, CaseStatus.EXCEPTION_FLAGGED}
 
 
 def load_scenario(scenario_id: str) -> Scenario:
@@ -148,8 +149,9 @@ def get_metrics():
     """KPI-uri agregate peste dosarele procesate: automatizare, timp mediu, sume protejate."""
     cases = list(CASES.values())
     popriri = [c for c in cases if c.status != CaseStatus.ROUTED_TO_OTHER_MODULE]
-    decisions = [c.decision for c in cases if c.decision]
-    automated = sum(1 for c in popriri if c.status in FINAL_AUTO_STATUSES)
+    # sumele contează doar după aprobarea angajatului: până atunci sunt doar propunerea agentului
+    decisions = [c.decision for c in cases if c.decision and c.status in FINAL_AUTO_STATUSES]
+    automated = sum(1 for c in popriri if c.proposed_status in FINAL_AUTO_STATUSES)
     durations = [PROCESSING_MS[c.case_id] for c in cases if c.case_id in PROCESSING_MS]
     zero = Decimal(0)
     return PlatformMetrics(
@@ -175,7 +177,7 @@ def _ai_telemetry(cases: list[Case]) -> AiTelemetry:
     cost_usd = sum(u.cost_usd for u in usages)
     cost_eur = cost_usd * config.USD_EUR_RATE
     manual_per_case = config.OFFICER_MINUTES_PER_CASE / 60 * config.OFFICER_HOURLY_COST_EUR
-    automated = sum(1 for c in cases if c.status in FINAL_AUTO_STATUSES)
+    automated = sum(1 for c in cases if c.proposed_status in FINAL_AUTO_STATUSES)
     avoided = automated * manual_per_case
     billed_latency = sum(u.latency_ms for u in usages if u.calls)
     return AiTelemetry(
@@ -351,6 +353,8 @@ def get_case_audit(case_id: str):
 def get_response_pdf(case_id: str):
     """Adresa de răspuns a băncii către executor, generată de Om3 (scripts/generate_pdfs.py)."""
     case = get_case(case_id)
+    if case.status not in FINAL_AUTO_STATUSES:
+        raise HTTPException(status_code=409, detail="Adresa de răspuns se emite doar după aprobarea unui angajat")
     letter = case.outcome.response_letter_text if case.outcome else None
     if not letter:
         raise HTTPException(status_code=409,
@@ -388,11 +392,47 @@ def review_case(case_id: str, action: ReviewAction):
     if case_id not in CASES:
         raise HTTPException(status_code=404, detail="Dosarul nu a fost găsit")
     case = CASES[case_id]
+    if case.approval:
+        raise HTTPException(status_code=409, detail="Dosarul a fost deja aprobat sau respins de un angajat")
     bank = BANKS.get(case_id, BankSnapshot())
     action.timestamp = now()
     case.reviews.append(action)
     CASES[case_id] = _run_pipeline(case, bank, review=action)
     return CASES[case_id]
+
+
+@app.post("/api/cases/{case_id}/approve", response_model=Case)
+def approve_case(case_id: str, action: ApprovalAction):
+    """Angajatul confirmă propunerea agentului: abia acum se emite ordinul de blocare / ridicare
+    și se poate descărca adresa de răspuns."""
+    case = get_case(case_id)
+    if case.status != CaseStatus.PENDING_APPROVAL or case.proposed_status is None:
+        raise HTTPException(status_code=409, detail="Doar dosarele conforme care așteaptă aprobare pot fi aprobate")
+    return _decide(case, action, "APPROVED", case.proposed_status)
+
+
+@app.post("/api/cases/{case_id}/reject", response_model=Case)
+def reject_case(case_id: str, action: ApprovalAction):
+    """Angajatul respinge propunerea agentului (sau un dosar cu probleme): nu se blochează nimic."""
+    case = get_case(case_id)
+    if case.status not in REJECTABLE_STATUSES:
+        raise HTTPException(status_code=409, detail="Dosarul nu mai poate fi respins")
+    if not (action.note or "").strip():
+        raise HTTPException(status_code=422, detail="Motivul respingerii este obligatoriu")
+    return _decide(case, action, "REJECTED", CaseStatus.REJECTED)
+
+
+def _decide(case: Case, action: ApprovalAction, decision: str, status: CaseStatus) -> Case:
+    ts = now()
+    case.approval = ApprovalRecord(decision=decision, reviewer=action.reviewer, note=action.note,
+                                   timestamp=ts, previous_status=case.status)
+    case.status = status
+    case.updated_at = ts
+    _register(case)                                # poprirea / insolvența intră în registru doar dacă e aprobată
+    AUDIT_LOG.setdefault(case.case_id, []).append(AuditEntry(
+        timestamp=ts, actor=f"user:{action.reviewer}", action=f"CASE_{decision}",
+        details={"status": status.value, "note": action.note}))
+    return case
 
 
 def _data_path(path) -> str:
@@ -443,6 +483,11 @@ def _run_tracked(case: Case, bank: BankSnapshot, review: ReviewAction | None) ->
 
     if review is None:
         PROCESSING_MS[case.case_id] = (time.perf_counter() - started) * 1000
+    # agentul nu aprobă singur: un dosar conform criteriilor așteaptă aprobarea unui angajat
+    if case.status in FINAL_AUTO_STATUSES:
+        case.proposed_status, case.status = case.status, CaseStatus.PENDING_APPROVAL
+    else:
+        case.proposed_status = None
     case.updated_at = now()
     _register(case)
     EVENTS[case.case_id] = [e.model_dump(mode="json") for e in sink.events]
@@ -483,18 +528,23 @@ def _bank_with_insolvencies(case: Case, bank: BankSnapshot) -> BankSnapshot:
 
 
 def _register(case: Case) -> None:
-    """Ține minte popririle înființate automat; o sistare reușită le scoate din registru."""
+    """Ține minte popririle înființate; o sistare aprobată le scoate din registru.
+    Ce adaugă în registru (poprire, insolvență) se rezervă încă din așteptarea aprobării: altfel aceeași adresă
+    primită de două ori ar putea fi aprobată de două ori. Ce șterge din registru (sistare, suspendarea
+    popririlor la insolvență) se face doar după aprobare, ca o respingere să nu piardă nimic."""
     REGISTERED.pop(case.case_id, None)
     INSOLVENT.pop(case.case_id, None)
     order, decision, customer = case.order, case.decision, case.customer
     if not (order and customer):
         return
-    if case.status == CaseStatus.AUTO_PROCESSED and order.doc_type == DocType.NOTIFICARE_INSOLVENTA:
+    status = case.proposed_status if case.status == CaseStatus.PENDING_APPROVAL else case.status
+    approved = case.status in FINAL_AUTO_STATUSES
+    if status == CaseStatus.AUTO_PROCESSED and order.doc_type == DocType.NOTIFICARE_INSOLVENTA:
         INSOLVENT[case.case_id] = (case.scenario_id, customer.national_id)
         for case_id in [k for k, (sid, nid, _g) in REGISTERED.items()
-                        if sid == case.scenario_id and nid == customer.national_id]:
+                        if approved and sid == case.scenario_id and nid == customer.national_id]:
             del REGISTERED[case_id]           # popririle înființate în sesiune sunt suspendate
-    if (case.status == CaseStatus.AUTO_PROCESSED and order.doc_type == DocType.POPRIRE_INFIINTARE
+    if (status == CaseStatus.AUTO_PROCESSED and order.doc_type == DocType.POPRIRE_INFIINTARE
             and order.case_number and decision):
         REGISTERED[case.case_id] = (case.scenario_id, customer.national_id, ActiveGarnishment(
             garnishment_id=f"G-{case.case_id}", customer_id=customer.customer_id,
@@ -502,7 +552,7 @@ def _register(case: Case) -> None:
             creditor_name=order.creditor_name or "?", creditor_type=order.creditor_type,
             total_due=order.total_due, monthly_periodic_take=decision.seizable_periodic,
             registered_at=case.updated_at))
-    elif case.status == CaseStatus.LIFTED:
+    elif status == CaseStatus.LIFTED and approved:
         target = order.references_case_number or order.case_number
         for case_id in [k for k, (sid, nid, g) in REGISTERED.items()
                         if sid == case.scenario_id and nid == customer.national_id and g.case_number == target]:

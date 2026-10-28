@@ -14,6 +14,13 @@ from app.modules.insolventa.module import Heir, parse_quota, split_estate
 client = TestClient(app)
 
 
+def approve(case: dict) -> dict:
+    """Angajatul aprobă propunerea agentului: abia atunci poprirea / insolvența intră în registru."""
+    res = client.post(f"/api/cases/{case['case_id']}/approve", json={"reviewer": "ofiter"})
+    assert res.status_code == 200, res.text
+    return res.json()
+
+
 def scenario(sid: str, text=None, bank=None) -> dict:
     """Rulează scenariul `sid`, opțional cu documentul sau banca modificate."""
     raw = json.loads((config.SCENARIOS_DIR / f"{sid}.json").read_text(encoding="utf-8"))
@@ -77,7 +84,7 @@ def test_negative_balance_splits_nothing():
 def test_s21_estate_split_on_three_heirs_including_eur_account():
     case = client.post("/api/cases/from-scenario", json={"scenario_id": "S21"}).json()
     assert case["module_id"] == "insolventa" and case["doc_type"] == "CERTIFICAT_MOSTENITOR"
-    assert case["status"] == "AUTO_PROCESSED" and codes(case) == []
+    assert case["proposed_status"] == "AUTO_PROCESSED" and codes(case) == []
     assert shares(case) == {"POPESCU MARIA": Decimal("3121.88"), "POPESCU ANDREI": Decimal("4682.81"),
                             "IONESCU ELENA": Decimal("4682.82")}
     assert sum(shares(case).values()) == Decimal("12487.51")      # 10.000,01 RON + 500 EUR × 4,9750
@@ -96,7 +103,7 @@ def test_officer_override_on_wrong_quotas_does_not_pay_anything():
     case = client.post("/api/cases/from-scenario", json={"scenario_id": "S22"}).json()
     done = client.post(f"/api/cases/{case['case_id']}/review",
                        json={"reviewer": "ofiter", "resolve_codes": ["E05"]}).json()
-    assert done["status"] == "AUTO_PROCESSED"
+    assert done["proposed_status"] == "AUTO_PROCESSED"
     assert "rectificat" in done["outcome"]["response_letter_text"]
 
 
@@ -113,7 +120,7 @@ def test_certificate_with_invalid_heir_cnp():
 
 def test_certificate_with_percent_quotas():
     case = scenario("S21", text=lambda t: t.replace("cotă 1/4", "cotă 25%").replace("cotă 3/8", "cotă 37,5%"))
-    assert case["status"] == "AUTO_PROCESSED" and sum(shares(case).values()) == Decimal("12487.51")
+    assert case["proposed_status"] == "AUTO_PROCESSED" and sum(shares(case).values()) == Decimal("12487.51")
 
 
 def test_certificate_without_heirs_is_invalid():
@@ -137,7 +144,7 @@ def test_deceased_with_active_garnishment_needs_officer():
 def test_s23_insolvency_suspends_garnishments():
     case = client.post("/api/cases/from-scenario", json={"scenario_id": "S23"}).json()
     assert case["module_id"] == "insolventa" and case["doc_type"] == "NOTIFICARE_INSOLVENTA"
-    assert case["status"] == "AUTO_PROCESSED" and codes(case) == ["E06"]
+    assert case["proposed_status"] == "AUTO_PROCESSED" and codes(case) == ["E06"]
     assert case["order"]["debtor_id"] == "34567892"                # CUI citit fără prefixul RO
     suspended = [r for r in case["decision"]["rules_applied"] if r["rule_id"] == "R-INS-01"]
     assert len(suspended) == 2 and case["decision"]["amount_to_hold"] == 0
@@ -146,14 +153,14 @@ def test_s23_insolvency_suspends_garnishments():
 
 def test_s24_bankruptcy_of_non_client_is_answered_automatically():
     case = client.post("/api/cases/from-scenario", json={"scenario_id": "S24"}).json()
-    assert case["status"] == "AUTO_PROCESSED" and codes(case) == []
+    assert case["proposed_status"] == "AUTO_PROCESSED" and codes(case) == []
     assert "nu figurează" in case["outcome"]["response_letter_text"]
     assert "EXPERT LICHIDARE SPRL" in case["outcome"]["response_letter_text"]
 
 
 def test_garnishment_after_insolvency_is_blocked():
     """După notificarea de insolvență, o poprire nouă pe aceeași firmă ia E08, iar popririle vechi nu mai contează."""
-    client.post("/api/cases/from-scenario", json={"scenario_id": "S23"})
+    approve(client.post("/api/cases/from-scenario", json={"scenario_id": "S23"}).json())
     s1 = json.loads((config.SCENARIOS_DIR / "S1.json").read_text(encoding="utf-8"))["document"]["text"]
     poprire = scenario("S23", text=lambda _t: s1.replace("IONESCU MIHAI, CNP: 1850615400011",
                                                          "CONSTRUCT PRO SRL, CUI: 34567892"))
@@ -166,7 +173,7 @@ def test_garnishment_after_insolvency_is_blocked():
 def test_rerun_of_insolvency_case_does_not_see_itself():
     case = client.post("/api/cases/from-scenario", json={"scenario_id": "S23"}).json()
     again = client.post(f"/api/cases/{case['case_id']}/review", json={"reviewer": "x"}).json()
-    assert again["status"] == "AUTO_PROCESSED" and codes(again) == ["E06"]
+    assert again["proposed_status"] == "AUTO_PROCESSED" and codes(again) == ["E06"]
 
 
 def test_insolvency_without_stamp_is_blocked():
@@ -176,7 +183,7 @@ def test_insolvency_without_stamp_is_blocked():
 
 def test_insolvency_with_invalid_insolvency_iban_warns():
     case = scenario("S23", text=lambda t: t.replace("RO76BTRL0000060099990000", "RO77BTRL0000060099990000"))
-    assert "E09" in codes(case) and case["status"] == "AUTO_PROCESSED"
+    assert "E09" in codes(case) and case["proposed_status"] == "AUTO_PROCESSED"
 
 
 @pytest.mark.parametrize("sid,doc_type", [("S21", "CERTIFICAT_MOSTENITOR"), ("S23", "NOTIFICARE_INSOLVENTA")])
@@ -185,7 +192,7 @@ def test_pdf_upload_goes_to_insolvency_module(sid, doc_type):
     case = client.post("/api/cases/upload", files={"file": (f"{sid}.pdf", pdf, "application/pdf")},
                        data={"scenario_id": sid}).json()
     assert case["doc_type"] == doc_type and case["module_id"] == "insolventa"
-    assert case["status"] == "AUTO_PROCESSED"
+    assert case["proposed_status"] == "AUTO_PROCESSED"
 
 
 def test_module_is_active():

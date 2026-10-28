@@ -16,6 +16,8 @@ const ACTION_LABEL: Record<string, string> = {
   RULE_APPLIED: "Regulă aplicată",
   EXCEPTION_RAISED: "Problemă semnalată",
   HITL_REVIEW: "Decizie ofițer",
+  CASE_APPROVED: "Aprobat",
+  CASE_REJECTED: "Respins",
 };
 
 // Intrările care contează pentru un auditor: decizii umane, rezultate, reguli, opriri
@@ -37,6 +39,8 @@ function describe(e: AuditEntry) {
     ];
     return `${parts.join("; ")}${typeof d.note === "string" && d.note ? `. Justificare: „${d.note}”` : ""}`;
   }
+  if (e.action === "CASE_APPROVED" || e.action === "CASE_REJECTED")
+    return typeof d.note === "string" && d.note ? `Motiv: „${d.note}”` : "Propunerea agentului a fost confirmată";
   if (e.action === "EXCEPTION_RAISED" && typeof d.code === "string")
     return `${EXCEPTION_LABEL[d.code] ?? d.code}: ${typeof d.message === "string" ? humanize(d.message) : ""}`;
   if (typeof d.message === "string") return humanize(d.message);

@@ -186,8 +186,8 @@ export function BatchUpload({ onOpen, onFinished }: Props) {
       const good = items.filter((x) => x.state === "done").length;
       say(
         bad === 0
-          ? `Gata! ${good === 1 ? "Documentul e rezolvat" : `Toate cele ${good} sunt rezolvate`} automat. Poți bea cafeaua liniștit.`
-          : `Gata! ${good} ${good === 1 ? "rezolvat" : "rezolvate"} automat, ${bad} ${bad === 1 ? "are" : "au"} nevoie de tine.`,
+          ? `Gata! ${good === 1 ? "Documentul e verificat" : `Toate cele ${good} sunt verificate`}. Te așteaptă doar aprobarea finală.`
+          : `Gata! ${good} ${good === 1 ? "verificat" : "verificate"}, ${bad} ${bad === 1 ? "are" : "au"} nevoie de tine.`,
       );
     }
     wasFinished.current = finished;
@@ -272,7 +272,7 @@ export function BatchUpload({ onOpen, onFinished }: Props) {
                 />
                 <span className={`min-w-0 flex-1 truncate ${x.state === "queued" ? "text-muted" : "font-medium"}`}>{x.file.name}</span>
                 <span className={`shrink-0 text-xs ${x.state === "error" ? "text-danger-ink" : "text-muted"}`}>
-                  {x.state === "queued" ? "În așteptare" : x.state === "running" ? "Se verifică…" : x.state === "done" ? "Rezolvat automat" : "Eroare"}
+                  {x.state === "queued" ? "În așteptare" : x.state === "running" ? "Se verifică…" : x.state === "done" ? "Verificat de agenți" : "Eroare"}
                 </span>
               </li>
             ))}
@@ -380,7 +380,7 @@ function Summary({ solved, failed, onOpen, onClear }: { solved: Item[]; failed: 
 
       <dl className="mt-6 grid grid-cols-2 gap-3">
         <div className="rounded-lg bg-sun-soft px-5 py-4">
-          <dt className="text-sm">Rezolvate automat</dt>
+          <dt className="text-sm">Verificate de agenți</dt>
           <dd className="display mt-1 text-4xl">{solved.length}</dd>
         </div>
         <div className={`rounded-lg px-5 py-4 ${failed.length ? "border border-danger/40 bg-danger-soft" : "bg-canvas"}`}>

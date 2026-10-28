@@ -1,6 +1,7 @@
 // Client API minimal către FastAPI (http://localhost:8000). Proprietari: Om4 & Om5.
 import type {
   AgentEvent,
+  ApprovalAction,
   AuditEntry,
   Case,
   CaseSummary,
@@ -40,6 +41,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify(review),
     }),
+  // Angajatul are ultimul cuvânt: aprobă propunerea agentului sau o respinge (motiv obligatoriu)
+  approveCase: (caseId: string, body: ApprovalAction) =>
+    json<Case>(`/api/cases/${caseId}/approve`, { method: "POST", body: JSON.stringify(body) }),
+  rejectCase: (caseId: string, body: ApprovalAction) =>
+    json<Case>(`/api/cases/${caseId}/reject`, { method: "POST", body: JSON.stringify(body) }),
 };
 
 // POST /api/cases/upload (multipart): fără Content-Type explicit, browserul pune boundary-ul singur

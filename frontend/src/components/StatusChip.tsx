@@ -1,5 +1,5 @@
 // Eticheta de status a unui dosar. Roșu = problemă, negru = rezolvat. Proprietar: Om4.
-import { CircleCheck, CircleDashed, LoaderCircle, OctagonAlert } from "lucide-react";
+import { CircleCheck, CircleDashed, ClipboardCheck, LoaderCircle, OctagonAlert } from "lucide-react";
 import type { CaseStatus } from "../types/contracts";
 import { STATUS_STYLE, type StatusTone } from "../lib/ui";
 
@@ -8,6 +8,7 @@ const TONE: Record<StatusTone, { className: string; Icon: typeof CircleCheck }> 
   danger: { className: "border-danger/40 bg-danger-soft text-danger-ink", Icon: OctagonAlert },
   working: { className: "border-ink/20 bg-sun text-ink", Icon: LoaderCircle },
   neutral: { className: "border-line bg-canvas text-muted", Icon: CircleDashed },
+  approval: { className: "border-ink/30 bg-sun-soft text-ink", Icon: ClipboardCheck },
 };
 
 export function StatusChip({ status, label }: { status: CaseStatus; label?: string }) {

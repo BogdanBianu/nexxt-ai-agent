@@ -1,6 +1,6 @@
 """Dosarul (Case) = obiectul central pe care îl vede frontend-ul."""
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import Field
 
@@ -51,6 +51,21 @@ class LlmUsage(Contract):
     models: list[str] = Field(default_factory=list)
 
 
+class ApprovalAction(Contract):
+    """Corpul `POST /api/cases/{id}/approve` și `/reject`: angajatul are ultimul cuvânt."""
+    reviewer: str = Field(min_length=1, max_length=120)
+    note: str | None = Field(default=None, max_length=2000)   # obligatorie la respingere
+
+
+class ApprovalRecord(Contract):
+    """Decizia finală a angajatului asupra propunerii agentului."""
+    decision: Literal["APPROVED", "REJECTED"]
+    reviewer: str
+    note: str | None = None
+    timestamp: datetime
+    previous_status: CaseStatus                 # PENDING_APPROVAL sau EXCEPTION_FLAGGED
+
+
 class AuditEntry(Contract):
     timestamp: datetime
     actor: str                                  # numele agentului sau "user:<nume>"
@@ -63,6 +78,8 @@ class Case(Contract):
     module_id: str | None = None                # "popriri" | "autoritati" | ...
     scenario_id: str | None = None
     status: CaseStatus = CaseStatus.RECEIVED
+    proposed_status: CaseStatus | None = None   # verdictul agentului (AUTO_PROCESSED / LIFTED) până la aprobare
+    approval: ApprovalRecord | None = None      # aprobarea / respingerea angajatului
     doc_type: DocType = DocType.NECUNOSCUT
     created_at: datetime
     updated_at: datetime

@@ -81,9 +81,11 @@ class ExceptionCode(str, Enum):
 class CaseStatus(str, Enum):
     RECEIVED = "RECEIVED"
     PROCESSING = "PROCESSING"
-    AUTO_PROCESSED = "AUTO_PROCESSED"            # totul OK, ordin de blocare emis
+    PENDING_APPROVAL = "PENDING_APPROVAL"        # agentul l-a găsit conform criteriilor; așteaptă aprobarea unui angajat
+    AUTO_PROCESSED = "AUTO_PROCESSED"            # aprobat de angajat, ordin de blocare emis
     EXCEPTION_FLAGGED = "EXCEPTION_FLAGGED"      # așteaptă decizia ofițerului
-    LIFTED = "LIFTED"                            # poprire ridicată (sistare)
+    LIFTED = "LIFTED"                            # poprire ridicată (sistare), aprobată de angajat
+    REJECTED = "REJECTED"                        # respins de angajat: nu se blochează nimic, nu se trimite răspuns
     ROUTED_TO_OTHER_MODULE = "ROUTED_TO_OTHER_MODULE"
     FAILED = "FAILED"                            # eroare tehnică
 

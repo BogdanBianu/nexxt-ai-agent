@@ -51,12 +51,16 @@ export function DocumentViewer({ data }: { data: Case }) {
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const o = data.order;
   const letter = data.outcome?.response_letter_text;
+  // Adresa pleacă doar după aprobarea unui angajat; până atunci e ciorna agentului
+  const approved = data.status === "AUTO_PROCESSED" || data.status === "LIFTED";
   const marks = [o?.case_number, o?.debtor_name, o?.debtor_id, o?.issuer_name, o?.creditor_name, o?.consignment_iban].filter(
     (v): v is string => !!v,
   );
 
   const missingLetter =
-    data.status === "ROUTED_TO_OTHER_MODULE"
+    data.status === "REJECTED"
+      ? "Dosarul a fost respins de un angajat; banca nu trimite răspunsul generat de agent."
+      : data.status === "ROUTED_TO_OTHER_MODULE"
       ? "Documentul a fost redirecționat către alt modul; PopririZero nu generează răspuns."
       : data.exceptions.some((e) => !e.resolved)
         ? "Răspunsul către executor se generează după ce rezolvi problemele dosarului."
@@ -97,9 +101,11 @@ export function DocumentViewer({ data }: { data: Case }) {
             <h3 id="doc-out-title" className="display text-lg">
               Răspunsul băncii
             </h3>
-            <p className="mt-0.5 text-sm text-muted">Generat automat, către {o?.issuer_name ?? "emitent"}</p>
+            <p className="mt-0.5 text-sm text-muted">
+              {approved ? "Aprobat, către" : "Ciornă a agentului, se trimite după aprobare, către"} {o?.issuer_name ?? "emitent"}
+            </p>
           </div>
-          {letter && (
+          {letter && approved && (
             <button
               onClick={() => {
                 setDownloading(true);
@@ -122,7 +128,7 @@ export function DocumentViewer({ data }: { data: Case }) {
           </p>
         )}
         <div className="mt-3">
-          {letter ? (
+          {letter && data.status !== "REJECTED" ? (
             <Paper>{letter}</Paper>
           ) : (
             <p className="rounded-md border border-dashed border-line-strong px-5 py-8 text-sm">{missingLetter}</p>

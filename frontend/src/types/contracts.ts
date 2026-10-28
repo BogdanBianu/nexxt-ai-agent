@@ -42,9 +42,11 @@ export type ExceptionCode = "E01" | "E02" | "E03" | "E04" | "E05" | "E06" | "E07
 export type CaseStatus =
   | "RECEIVED"
   | "PROCESSING"
-  | "AUTO_PROCESSED"
+  | "PENDING_APPROVAL" // agentul l-a găsit conform; așteaptă aprobarea unui angajat
+  | "AUTO_PROCESSED" // aprobat de angajat
   | "EXCEPTION_FLAGGED"
-  | "LIFTED"
+  | "LIFTED" // ridicare aprobată de angajat
+  | "REJECTED" // respins de angajat
   | "ROUTED_TO_OTHER_MODULE"
   | "FAILED";
 
@@ -221,6 +223,8 @@ export interface Case {
   module_id?: string | null;
   scenario_id?: string | null;
   status: CaseStatus;
+  proposed_status?: CaseStatus | null; // verdictul agentului (AUTO_PROCESSED / LIFTED) până la aprobare
+  approval?: ApprovalRecord | null;
   doc_type: DocType;
   created_at: string;
   updated_at: string;
@@ -250,6 +254,20 @@ export interface LlmUsage {
   cost_eur: number;
   cache_savings_usd: number;
   models: string[];
+}
+
+// POST /api/cases/{id}/approve și /reject: angajatul are ultimul cuvânt
+export interface ApprovalAction {
+  reviewer: string;
+  note?: string | null; // obligatorie la respingere
+}
+
+export interface ApprovalRecord {
+  decision: "APPROVED" | "REJECTED";
+  reviewer: string;
+  note?: string | null;
+  timestamp: string;
+  previous_status: CaseStatus;
 }
 
 // GET /api/cases/{id}/audit — oglinda AuditEntry din backend/app/contracts

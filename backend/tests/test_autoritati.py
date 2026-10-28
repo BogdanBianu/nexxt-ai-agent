@@ -66,7 +66,7 @@ def test_s8_igpr_request_processes_end_to_end():
     case = res.json()
     assert case["module_id"] == "autoritati"
     assert case["doc_type"] == "CERERE_AUTORITATE"
-    assert case["status"] == "AUTO_PROCESSED"
+    assert case["proposed_status"] == "AUTO_PROCESSED"
     assert case["order"]["case_number"] == "445566/P/2026"
     assert case["order"]["debtor_name"] == "VASILESCU DANIEL"
     assert case["order"]["debtor_id"] == "2901107000013"

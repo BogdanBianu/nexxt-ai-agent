@@ -18,6 +18,13 @@ client = TestClient(app)
 S1_TEXT_CNP = "IONESCU MIHAI, CNP: 1850615400011"
 
 
+def approve(case: dict) -> dict:
+    """Angajatul aprobă propunerea agentului: abia atunci poprirea / insolvența intră în registru."""
+    res = client.post(f"/api/cases/{case['case_id']}/approve", json={"reviewer": "ofiter"})
+    assert res.status_code == 200, res.text
+    return res.json()
+
+
 
 def run_variant(monkeypatch, base="S1", text=None, bank=None, review=None) -> dict:
     """Rulează o variantă a unui scenariu existent (text sau bancă modificate) prin API."""
@@ -100,7 +107,7 @@ def test_metrics_survive_mixed_and_failed_cases():
 
 def test_same_address_twice_is_duplicate_not_double_hold():
     """Fără registru, a doua trimitere a aceleiași adrese bloca încă 5.800 RON (11.600 în total)."""
-    first = client.post("/api/cases/from-scenario", json={"scenario_id": "S1"}).json()
+    first = approve(client.post("/api/cases/from-scenario", json={"scenario_id": "S1"}).json())
     second = client.post("/api/cases/from-scenario", json={"scenario_id": "S1"}).json()
     assert first["status"] == "AUTO_PROCESSED" and hold(first) == Decimal("5800")
     assert second["status"] == "EXCEPTION_FLAGGED" and codes(second) == ["E02"]
@@ -110,17 +117,17 @@ def test_same_address_twice_is_duplicate_not_double_hold():
 def test_hitl_rerun_does_not_flag_its_own_case_as_duplicate():
     case = client.post("/api/cases/from-scenario", json={"scenario_id": "S1"}).json()
     again = client.post(f"/api/cases/{case['case_id']}/review", json={"reviewer": "x"}).json()
-    assert again["status"] == "AUTO_PROCESSED" and codes(again) == []
+    assert again["proposed_status"] == "AUTO_PROCESSED" and codes(again) == []
 
 
 def test_sistare_frees_the_case_number(monkeypatch):
-    client.post("/api/cases/from-scenario", json={"scenario_id": "S1"})
+    approve(client.post("/api/cases/from-scenario", json={"scenario_id": "S1"}).json())
     sistare = run_variant(monkeypatch, text=lambda t: t.replace("ÎNFIINȚARE A POPRIRII", "SISTARE A POPRIRII")
                           .replace("ÎNFIINȚAREA POPRIRII", "SISTAREA POPRIRII"))
-    assert sistare["status"] == "LIFTED"
+    assert approve(sistare)["status"] == "LIFTED"
     monkeypatch.undo()
     again = client.post("/api/cases/from-scenario", json={"scenario_id": "S1"}).json()
-    assert again["status"] == "AUTO_PROCESSED"
+    assert again["proposed_status"] == "AUTO_PROCESSED"
 
 
 def test_scenarios_are_separate_banks():
@@ -173,7 +180,7 @@ def test_hold_instruction_exists_when_client_has_only_savings_account(monkeypatc
     def savings_only(bank):
         bank["accounts"][0]["account_type"] = "ECONOMII"
     case = run_variant(monkeypatch, bank=savings_only)
-    assert case["status"] == "AUTO_PROCESSED"
+    assert case["proposed_status"] == "AUTO_PROCESSED"
     assert sum(h["amount"] for h in case["decision"]["hold_instructions"]) == float(hold(case))
 
 
@@ -195,7 +202,7 @@ def test_issue_date_in_the_future_is_flagged(monkeypatch):
 def test_amounts_without_decimals_are_read(monkeypatch):
     case = run_variant(monkeypatch, text=lambda t: t.replace("14.000,00", "14000").replace("1.000,00", "1000")
                        .replace("15.000,00", "15000"))
-    assert case["status"] == "AUTO_PROCESSED" and hold(case) == Decimal("5800")
+    assert case["proposed_status"] == "AUTO_PROCESSED" and hold(case) == Decimal("5800")
 
 
 def test_company_cui_with_ro_prefix_is_extracted(monkeypatch):
@@ -210,7 +217,7 @@ def test_company_cui_with_ro_prefix_is_extracted(monkeypatch):
 def test_sistare_without_amount_is_not_invalid(monkeypatch):
     case = run_variant(monkeypatch, base="S7", text=lambda t: "\n".join(
         line for line in t.splitlines() if not line.startswith("Total de recuperat")))
-    assert case["status"] == "LIFTED" and codes(case) == []
+    assert case["proposed_status"] == "LIFTED" and codes(case) == []
 
 
 @pytest.mark.parametrize("word,key,ok", [

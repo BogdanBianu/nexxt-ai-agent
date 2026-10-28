@@ -78,14 +78,14 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
           <TriangleAlert size={20} strokeWidth={2.25} className="mt-0.5 shrink-0 text-danger" aria-hidden />
           <div className="min-w-0">
             <p className="font-bold text-danger-ink">
-              {open.length === 1 ? "Procesat automat, cu o atenționare" : `Procesat automat, cu ${open.length} atenționări`}
+              {open.length === 1 ? "Conform, cu o atenționare" : `Conform, cu ${open.length} atenționări`}
             </p>
             <ul className="mt-1 space-y-1 text-sm">
               {open.map((e) => (
                 <li key={e.code + e.message}>{humanize(e.message)}</li>
               ))}
             </ul>
-            <p className="mt-2 text-sm text-danger-ink">Atenționările sunt incluse în răspuns; nu e nevoie de o decizie.</p>
+            <p className="mt-2 text-sm text-danger-ink">Atenționările sunt incluse în răspuns. Ține cont de ele când aprobi dosarul.</p>
           </div>
         </div>
       )}
@@ -95,7 +95,7 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
           <OctagonAlert size={20} strokeWidth={2.25} className="mt-0.5 shrink-0 text-danger" aria-hidden />
           <div className="min-w-0">
             <p className="font-bold text-danger-ink">
-              {open.length === 1 ? "Procesarea automată a fost oprită" : `Procesarea automată a fost oprită: ${open.length} probleme`}
+              {open.length === 1 ? "Agentul nu a găsit dosarul conform" : `Agentul nu a găsit dosarul conform: ${open.length} probleme`}
             </p>
             <ul className="mt-1 space-y-1 text-sm">
               {open.map((e) => (

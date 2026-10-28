@@ -88,14 +88,15 @@ function ScenarioMenu({ moduleId, label, onPick, busy }: { moduleId: string; lab
   );
 }
 
-type Filter = "ALL" | "REVIEW" | "AUTO";
+type Filter = "ALL" | "REVIEW" | "APPROVAL" | "AUTO";
 
 const isReview = (c: CaseSummary) => STATUS_STYLE[c.status].tone === "danger";
 
 const FILTERS: { id: Filter; label: string; test: (c: CaseSummary) => boolean }[] = [
   { id: "ALL", label: "Toate", test: () => true },
   { id: "REVIEW", label: "De verificat", test: isReview },
-  { id: "AUTO", label: "Rezolvate automat", test: (c) => c.status === "AUTO_PROCESSED" },
+  { id: "APPROVAL", label: "De aprobat", test: (c) => c.status === "PENDING_APPROVAL" },
+  { id: "AUTO", label: "Aprobate", test: (c) => c.status === "AUTO_PROCESSED" || c.status === "LIFTED" },
 ];
 
 const DOT: Record<StatusTone, string> = {
@@ -103,6 +104,7 @@ const DOT: Record<StatusTone, string> = {
   danger: "bg-danger",
   working: "bg-sun ring-1 ring-ink",
   neutral: "bg-line-strong",
+  approval: "bg-sun-soft ring-1 ring-ink",
 };
 
 const QUEUE_MAX = 6;
