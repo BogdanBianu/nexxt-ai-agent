@@ -1,6 +1,6 @@
 // Legal Inbox: lista dosarelor + lansatorul de scenarii S1..S8. Proprietar: Om4.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, CircleCheck, ChevronDown, OctagonAlert, Plus, Search, X } from "lucide-react";
+import { ArrowRight, CircleCheck, ChevronDown, Layers, OctagonAlert, Plus, RotateCcw, Search, X } from "lucide-react";
 import { api } from "../api/client";
 import type { Case, CaseSummary, ScenarioInfo } from "../types/contracts";
 import { ServerDown } from "./ServerDown";
@@ -54,7 +54,7 @@ function ScenarioMenu({ onPick, busy }: { onPick: (id: string) => void; busy: bo
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 z-20 mt-2 w-[22rem] overflow-hidden rounded-md bg-paper shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-1 ring-line">
+        <div role="menu" className="absolute right-0 z-20 mt-2 max-h-96 w-[22rem] overflow-y-auto rounded-md bg-paper shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-1 ring-line">
           <p className="border-b border-line px-4 py-2.5 text-xs text-muted">Alege un scenariu de test. Dosarul trece imediat prin agenți.</p>
           {scenarios.map((s) => (
             <button
@@ -141,6 +141,7 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
   const [details, setDetails] = useState<Record<string, Case>>({});
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [query, setQuery] = useState("");
@@ -184,6 +185,38 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
     }
   }
 
+  async function simulateAll() {
+    setBusy(true);
+    setError(null);
+    try {
+      const scenarios = await api.listScenarios();
+      for (let i = 0; i < scenarios.length; i++) {
+        setBatchProgress(`${i + 1}/${scenarios.length}`);
+        await api.createFromScenario(scenarios[i].scenario_id);
+      }
+      reload();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBatchProgress(null);
+      setBusy(false);
+    }
+  }
+
+  async function resetAll() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.resetCases();
+      setCases([]);
+      setDetails({});
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const sorted = [...cases].sort((a, b) => b.created_at.localeCompare(a.created_at));
   // Coada: cele mai vechi întâi, ca nimic să nu stea uitat
   const queue = sorted.filter(isReview).reverse();
@@ -210,8 +243,28 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
           <p className="text-sm text-muted first-letter:uppercase">{today}</p>
           <h1 className="display mt-1 text-4xl">Popriri</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {cases.length > 0 && (
+            <button
+              onClick={resetAll}
+              disabled={busy}
+              title="Șterge din memorie toate adresele procesate și popririle înregistrate"
+              className="inline-flex h-10 items-center gap-1.5 rounded-md bg-paper px-3 text-sm font-semibold text-muted ring-1 ring-line transition-[color,box-shadow,transform] duration-150 ease-out hover:text-ink hover:ring-ink active:scale-[0.97] disabled:opacity-40"
+            >
+              <RotateCcw size={15} aria-hidden />
+              Resetează
+            </button>
+          )}
           <UploadDocument onUploaded={(id) => onOpen(id, true)} />
+          <button
+            onClick={simulateAll}
+            disabled={busy}
+            title="Rulează toate scenariile de test (S1..S16) și afișează rezultatele în listă"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-sun px-3.5 text-sm font-semibold text-ink ring-1 ring-ink/15 transition-[background-color,transform] duration-150 ease-out hover:bg-sun/85 active:scale-[0.97] disabled:opacity-40"
+          >
+            <Layers size={16} aria-hidden />
+            {batchProgress ? `Se simulează (${batchProgress})…` : "Simulează toate"}
+          </button>
           <ScenarioMenu onPick={simulate} busy={busy} />
         </div>
       </div>

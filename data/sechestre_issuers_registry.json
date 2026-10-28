@@ -1,0 +1,79 @@
+{
+  "version": "2026.10",
+  "description": "Registrul oficial al instituțiilor și autorităților emitente de măsuri asigurătorii (sechestre asigurătorii civile, fiscale și penale) și al conturilor speciale de consemnare (Trezoreria Statului / ANABI).",
+  "issuers": [
+    {
+      "issuer_id": "AUT-ANAF-DGAF",
+      "name": "MINISTERUL FINANȚELOR — ANAF — DIRECȚIA GENERALĂ ANTIFRAUDĂ FISCALĂ",
+      "cui": "4358052",
+      "issuer_type": "ANAF",
+      "measure_type": "SECHESTRU_ASIGURATOR_FISCAL",
+      "legal_basis": "Art. 213 din Legea nr. 207/2015 privind Codul de procedură fiscală (Formular 504 - Decizie de instituire a măsurilor asigurătorii)",
+      "consignment_iban": "RO27TREZ7005005XXX024510",
+      "keywords": [
+        "DIRECTIA GENERALA ANTIFRAUDA FISCALA",
+        "DECIZIE DE INSTITUIRE A MASURILOR ASIGURATORII",
+        "FORMULAR 504",
+        "DGAF"
+      ]
+    },
+    {
+      "issuer_id": "AUT-ANAF-DGAMC",
+      "name": "MINISTERUL FINANȚELOR — ANAF — DIRECȚIA GENERALĂ DE ADMINISTRARE A MARILOR CONTRIBUABILI",
+      "cui": "16057796",
+      "issuer_type": "ANAF",
+      "measure_type": "SECHESTRU_ASIGURATOR_FISCAL",
+      "legal_basis": "Art. 213 alin. (1)-(8) din Legea nr. 207/2015 privind Codul de procedură fiscală",
+      "consignment_iban": "RO27TREZ7005005XXX024510",
+      "keywords": [
+        "DIRECTIA GENERALA DE ADMINISTRARE A MARILOR CONTRIBUABILI",
+        "DGAMC",
+        "MASURI ASIGURATORII FISCALE"
+      ]
+    },
+    {
+      "issuer_id": "AUT-TB-S6",
+      "name": "TRIBUNALUL BUCUREȘTI — SECȚIA A VI-A CIVILĂ (PRIN BEJ MORARU ȘTEFAN)",
+      "cui": "4340633",
+      "issuer_type": "EXECUTOR",
+      "measure_type": "SECHESTRU_ASIGURATOR_CIVIL",
+      "legal_basis": "Art. 952-955 din Legea nr. 134/2010 privind Codul de procedură civilă (Încheiere civilă executorie de instituire a sechestrului asigurător)",
+      "consignment_iban": "RO61BREL0002001890620400",
+      "keywords": [
+        "TRIBUNALUL BUCURESTI",
+        "SECTIA A VI-A CIVILA",
+        "INCHEIERE CIVILA EXECUTORIE",
+        "SECHESTRU ASIGURATOR CIVIL",
+        "BEJ MORARU STEFAN"
+      ]
+    },
+    {
+      "issuer_id": "AUT-ANABI",
+      "name": "AGENȚIA NAȚIONALĂ DE ADMINISTRARE A BUNURILOR INDISPONIBILIZATE (ANABI)",
+      "cui": "36461480",
+      "issuer_type": "PARCHET",
+      "measure_type": "SECHESTRU_ASIGURATOR_PENAL",
+      "legal_basis": "Art. 249-254 Cod procedură penală raportat la art. 27-28 din Legea nr. 318/2015 privind ANABI",
+      "consignment_iban": "RO53CECEB00008ANABI01890",
+      "keywords": [
+        "AGENTIA NATIONALA DE ADMINISTRARE A BUNURILOR INDISPONIBILIZATE",
+        "ANABI",
+        "ORDONANTA DE INSTITUIRE A SECHESTRULUI ASIGURATOR"
+      ]
+    },
+    {
+      "issuer_id": "AUT-PTB-MP",
+      "name": "MINISTERUL PUBLIC — PARCHETUL DE PE LÂNGĂ TRIBUNALUL BUCUREȘTI",
+      "cui": "4364748",
+      "issuer_type": "PARCHET",
+      "measure_type": "SECHESTRU_ASIGURATOR_PENAL",
+      "legal_basis": "Art. 249 alin. (1)-(5) și Art. 252 din Legea nr. 135/2010 privind Codul de procedură penală",
+      "consignment_iban": "RO53CECEB00008ANABI01890",
+      "keywords": [
+        "PARCHETUL DE PE LANGA TRIBUNALUL BUCURESTI",
+        "ORDONANTA DE INSTITUIRE A MASURII ASIGURATORII",
+        "SECHESTRU ASIGURATOR PENAL"
+      ]
+    }
+  ]
+}

@@ -1,42 +1,56 @@
 {
   "scenario_id": "S20",
-  "title": "Faliment — debitorul nu este client al băncii",
-  "description": "Lichidatorul judiciar notifică falimentul unei firme care nu are conturi la bancă. Răspunsul automat: banca nu deține conturi ale debitorului.",
+  "title": "Decizie de ridicare a sechestrului asigurător (Art. 213 alin. 13 CPF)",
+  "description": "Decizie oficială emisă de ANAF — Direcția Generală Antifraudă Fiscală privind ridicarea integrală a măsurilor asigurătorii instituite în dosarul nr. 3105/DGAF/2026, ca urmare a stingerii obligațiilor fiscale. Sistemul deblochează imediat conturile (status LIFTED).",
   "document": {
-    "document_id": "DOC-S20",
-    "filename": "document_S20.pdf",
-    "received_at": "2026-10-28T10:00:00Z",
+    "document_id": "DOC-SECH-LIFT-3105",
+    "filename": "decizie_ridicare_sechestru_asigurator_ANAF_3105_2026.pdf",
+    "received_at": "2026-10-28T15:30:00Z",
     "content_type": "text/plain",
-    "text": "TRIBUNALUL CLUJ — SECȚIA a II-a CIVILĂ\nLichidator judiciar: EXPERT LICHIDARE SPRL\nDosar nr. 4521/117/2026\nData: 21.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: NOTIFICARE PRIVIND DESCHIDEREA PROCEDURII SIMPLIFICATE A INSOLVENȚEI (FALIMENT)\n\nPrin sentința civilă pronunțată în dosarul de mai sus s-a dispus deschiderea procedurii simplificate a insolvenței, conform Legii nr. 85/2014, împotriva debitorului:\nDebitor: ALFA LOGISTIC SRL, CUI: 22334451\nData deschiderii procedurii: 16.10.2026\nLichidator judiciar: EXPERT LICHIDARE SPRL\n\nÎn temeiul art. 75 din Legea nr. 85/2014, toate măsurile de executare silită asupra averii debitorului se suspendă de drept. Vă rugăm să comunicați conturile și soldurile debitorului.\nPrezenta notificare poartă semnătură și ștampilă L.S.",
-    "pdf_path": null
+    "text": "MINISTERUL FINANȚELOR — ANAF — DIRECȚIA GENERALĂ ANTIFRAUDĂ FISCALĂ\nDirecția Regională Antifraudă Fiscală București\nDosar administrativ-fiscal nr. 3105/DGAF/2026\nData emiterii: 27.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A. — Direcția Operațiuni Juridice și Măsuri Asigurătorii\nObiect: DECIZIE DE RIDICARE A MĂSURILOR ASIGURĂTORII (RIDICAREA SECHESTRULUI ASIGURĂTOR)\n\nÎn temeiul art. 213 alin. (13) din Legea nr. 207/2015 privind Codul de procedură fiscală, întrucât motivele pentru care au fost dispuse măsurile asigurătorii au încetat prin achitarea integrală a creanței, se dispune RIDICAREA MĂSURILOR ASIGURĂTORII ȘI A SECHESTRULUI ASIGURĂTOR instituite în dosarul nr. 3105/DGAF/2026 privind:\nContribuabil: DOBRESCU CLAUDIA ELENA, CNP: 2880719400450\nAutoritate beneficiară: STATUL ROMÂN PRIN ANAF — DIRECȚIA GENERALĂ ANTIFRAUDĂ FISCALĂ\n\nVă rugăm să procedați de îndată la deblocarea sumelor indisponibilizate în conturile bancare ale contribuabilului.\nPrezentul act oficial poartă semnătură electronică calificată și ștampilă oficială L.S.",
+    "pdf_path": "pdfs/S20.pdf"
   },
   "bank": {
     "customers": [
       {
-        "customer_id": "CUST-020",
-        "full_name": "BETA TRANS SRL",
-        "national_id": "40112232",
-        "is_legal_entity": true,
+        "customer_id": "CUST-SECH-04",
+        "full_name": "DOBRESCU CLAUDIA ELENA",
+        "national_id": "2880719400450",
+        "is_legal_entity": false,
         "status": "ACTIV",
-        "address": "Str. Exemplu nr. 1, București"
+        "address": "Str. Caimatei nr. 10, Sector 2, București"
       }
     ],
     "accounts": [
       {
-        "iban": "RO54RZBR0000060077771111",
-        "customer_id": "CUST-020",
+        "iban": "RO94RZBR0000060054603105",
+        "customer_id": "CUST-SECH-04",
         "account_type": "CURENT",
         "currency": "RON",
-        "opening_balance": 1500,
-        "current_balance": 1500
+        "opening_balance": 14000.0,
+        "current_balance": 14000.0
       }
     ],
     "transactions": [],
-    "active_garnishments": []
+    "active_garnishments": [
+      {
+        "garnishment_id": "SECH-ACT-3105",
+        "customer_id": "CUST-SECH-04",
+        "case_number": "3105/DGAF/2026",
+        "issuer_name": "MINISTERUL FINANȚELOR — ANAF — DIRECȚIA GENERALĂ ANTIFRAUDĂ FISCALĂ",
+        "creditor_name": "STATUL ROMÂN PRIN ANAF — DIRECȚIA GENERALĂ ANTIFRAUDĂ FISCALĂ",
+        "creditor_type": "FISCAL",
+        "total_due": 14000.0,
+        "amount_recovered": 0.0,
+        "monthly_periodic_take": 0.0,
+        "registered_at": "2026-09-10T10:00:00Z",
+        "active": true
+      }
+    ]
   },
   "expected": {
-    "doc_type": "NOTIFICARE_INSOLVENTA",
-    "status": "AUTO_PROCESSED",
+    "doc_type": "POPRIRE_SISTARE",
+    "status": "LIFTED",
     "amount_to_hold": 0.0,
     "exception_codes": [],
     "amount_after_review": null

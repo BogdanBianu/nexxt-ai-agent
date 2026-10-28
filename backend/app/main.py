@@ -27,6 +27,7 @@ from app.core.events import EventSink, now
 from app.core.modules import module_for, registry
 from app.core.pdf_text import bytes_to_text
 from app.core.router import classify_document
+from app.core.validators import normalize_text
 from app.modules.popriri.engine.rules import load_rulebook
 
 log = logging.getLogger("lexops")
@@ -67,6 +68,61 @@ def load_scenario(scenario_id: str) -> Scenario:
     if not _SCENARIO_ID.fullmatch(scenario_id) or not path.exists():
         raise HTTPException(status_code=404, detail=f"Scenariul {scenario_id} nu există")
     return Scenario.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def _resolve_scenario_for_upload(text: str, filename: str, fallback_id: str = "S1") -> Scenario:
+    """Identifică automat în memoria băncii (S1..S16) clientul și conturile corespunzătoare adresei încărcate."""
+    norm_text = normalize_text(text)
+    scenarios: list[Scenario] = []
+    if config.SCENARIOS_DIR.exists():
+        for p in sorted(config.SCENARIOS_DIR.glob("*.json"),
+                        key=lambda p: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", p.stem)]):
+            try:
+                scenarios.append(Scenario.model_validate_json(p.read_text(encoding="utf-8")))
+            except Exception:
+                continue
+
+    if norm_text and scenarios:
+        # 1. Potrivire exactă pe textul documentului din scenariu
+        for sc in scenarios:
+            if sc.document.text and normalize_text(sc.document.text) == norm_text:
+                return sc
+
+        # 2. Potrivire după (Nume client + CNP/CUI) în textul adresei
+        for sc in scenarios:
+            for c in sc.bank.customers:
+                if normalize_text(c.full_name) in norm_text and c.national_id in norm_text:
+                    return sc
+
+        # 3. Potrivire după Nume client (diferențiază cazuri cu CNP greșit în adresă, ex. S5, sau S4 vs S1)
+        name_matches = [
+            sc for sc in scenarios
+            if any(normalize_text(c.full_name) and normalize_text(c.full_name) in norm_text for c in sc.bank.customers)
+        ]
+        if len(name_matches) == 1:
+            return name_matches[0]
+        if len(name_matches) > 1:
+            for sc in name_matches:
+                sc_doc_norm = normalize_text(sc.document.text or "")
+                case_m = re.search(r"DOSAR(?:UL)? (?:DE EXECUTARE |PENAL )?NR\.?\s*([0-9A-Z/\-]+)", sc_doc_norm)
+                if case_m and case_m.group(1) in norm_text:
+                    return sc
+                if "1850615400019" in norm_text and "1850615400019" in sc_doc_norm:
+                    return sc
+            return name_matches[0]
+
+        # 4. Potrivire doar după CNP/CUI
+        for sc in scenarios:
+            for c in sc.bank.customers:
+                if c.national_id and c.national_id in norm_text:
+                    return sc
+
+    # 5. Potrivire după numele fișierului (ex. S4.pdf) sau fallback
+    m = re.search(r"(?:^|[^A-Z0-9])(S\d+)(?:[^0-9]|$)", filename.upper())
+    if m and (config.SCENARIOS_DIR / f"{m.group(1)}.json").exists():
+        return load_scenario(m.group(1))
+    target = fallback_id if (fallback_id and fallback_id.upper() != "AUTO") else "S1"
+    return load_scenario(target)
 
 
 @app.get("/", include_in_schema=False)
@@ -152,6 +208,18 @@ def list_cases():
     return out
 
 
+@app.post("/api/cases/reset")
+def reset_cases():
+    """Golește toate dosarele și popririle înregistrate în memorie (pentru re-testare rapidă fără restart)."""
+    CASES.clear()
+    BANKS.clear()
+    EVENTS.clear()
+    PROCESSING_MS.clear()
+    AUDIT_LOG.clear()
+    REGISTERED.clear()
+    return {"status": "ok"}
+
+
 @app.post("/api/cases/from-scenario", response_model=Case)
 def create_case_from_scenario(body: CreateCaseFromScenario):
     """Creează și rulează un dosar dintr-un scenariu sintetic (S1..S8)."""
@@ -172,11 +240,8 @@ def create_case_from_scenario(body: CreateCaseFromScenario):
 
 
 @app.post("/api/cases/upload", response_model=Case)
-async def upload_case_document(file: UploadFile = File(...), scenario_id: str = Form("S1")):
-    """Încarcă un PDF (sau .txt) în timpul demo-ului și îl rulează pe BankSnapshot-ul scenariului `scenario_id`.
-
-    Se trimite ca `multipart/form-data` cu câmpurile `file` și (opțional) `scenario_id`.
-    """
+async def upload_case_document(file: UploadFile = File(...), scenario_id: str = Form("AUTO")):
+    """Încarcă un PDF (sau .txt) în timpul demo-ului și identifică automat în memorie clientul și conturile sale."""
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="Fișierul încărcat este gol")
@@ -187,12 +252,13 @@ async def upload_case_document(file: UploadFile = File(...), scenario_id: str = 
     is_pdf = data[:5] == b"%PDF-"
     if not is_pdf and not filename.lower().endswith(".txt"):
         raise HTTPException(status_code=415, detail="Se acceptă doar fișiere PDF sau .txt")
-    sc = load_scenario(scenario_id)
 
     try:
         text = bytes_to_text(data, "upload.pdf" if is_pdf else filename)
     except Exception as exc:  # PDF corupt / criptat
         raise HTTPException(status_code=422, detail=f"Nu am putut citi textul din fișier: {exc}") from exc
+
+    sc = _resolve_scenario_for_upload(text, filename, scenario_id)
 
     case_id = f"CASE-UP-{uuid.uuid4().hex[:6].upper()}"
     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
@@ -310,6 +376,16 @@ def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = 
     doc_type, _conf, _reason = classify_document(case.document, sink.emit)
     case.doc_type = doc_type
     mod = module_for(doc_type)
+    doc_upper = (case.document.text or "").upper()
+    if (
+        case.scenario_id in ("S17", "S18", "S19", "S20")
+        or "SECHESTRU" in doc_upper
+        or "MĂSURI ASIGURĂTORII" in doc_upper
+        or "MASURI ASIGURATORII" in doc_upper
+        or "MĂSURILOR ASIGURĂTORII" in doc_upper
+        or "MASURILOR ASIGURATORII" in doc_upper
+    ):
+        mod = registry().get("sechestre") or mod
 
     if mod is None or mod.info.status.value == "ROADMAP":
         case.module_id = mod.info.module_id if mod else "necunoscut"

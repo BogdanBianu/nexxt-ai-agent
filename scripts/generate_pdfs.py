@@ -1,16 +1,21 @@
 """Generator de PDF-uri sintetice pentru adresele de poprire și răspunsul băncii. Proprietar: Om3.
 
 Funcționalitate:
-1. Generează PDF-uri din fiecare scenariu `data/scenarios/S*.json` în `data/pdfs/{scenario_id}.pdf`
+1. Generează PDF-uri digitale din fiecare scenariu `data/scenarios/S*.json` în `data/pdfs/{scenario_id}.pdf`
    folosind `reportlab` cu suport Unicode complet pentru diacritice românești (ă, â, î, ș, ț)
    și 3 layout-uri distincte (BEJ clasic, Adresă Sistare, Cerere Autoritate).
-2. `render_bank_response_pdf(case_id, letter_text, output_dir) -> Path` generează PDF-ul oficial
+2. Generează PDF-uri SCANATE / CU ZGOMOT în `data/pdfs_scanned/` (blurate, rotite/strâmbe,
+   rezoluție slabă, compresie JPEG de fax, pete de toner și dungă de îndoire) pentru testarea
+   OCR-ului multimodal și a robusteții agenților.
+3. `render_bank_response_pdf(case_id, letter_text, output_dir) -> Path` generează PDF-ul oficial
    de răspuns al băncii cu antetul Raiffeisen Bank.
 
 Rulare:
     python scripts/generate_pdfs.py
 """
+import io
 import json
+import random
 import sys
 from pathlib import Path
 
@@ -321,12 +326,81 @@ def _build_autoritate(doc_data: dict, out_path: Path) -> None:
     doc.build(story)
 
 
+def _build_sechestru(doc_data: dict, out_path: Path) -> None:
+    """Layout distinct pentru Încheiere / Ordonanță de Sechestru Asigurător (Art. 952 CPC / Art. 249 CPP)."""
+    doc = SimpleDocTemplate(
+        str(out_path),
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+    )
+    story = []
+    text = doc_data.get("text", "")
+    lines = [l for l in text.split("\n") if l.strip()]
+
+    if lines:
+        story.append(Paragraph(lines[0], STYLE_BEJ_HEADER))
+    header_end = 1
+    for idx, line in enumerate(lines[1:5], start=1):
+        if line.startswith("CĂTRE:"):
+            header_end = idx
+            break
+        story.append(Paragraph(line, STYLE_BEJ_SUBHEADER))
+        header_end = idx + 1
+
+    story.append(Spacer(1, 0.4 * cm))
+
+    banner = Table([["ACT OFICIAL — MĂSURĂ ASIGURĂTORIE / SECHESTRU ASIGURĂTOR"]], colWidths=[16 * cm])
+    banner.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), HexColor("#4A2500")),
+        ("TEXTCOLOR", (0, 0), (-1, -1), white),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, -1), FONT_BOLD),
+        ("FONTSIZE", (0, 0), (-1, -1), 11.5),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.append(banner)
+    story.append(Spacer(1, 0.6 * cm))
+
+    for line in lines[header_end:]:
+        if any(prefix in line for prefix in [
+            "Debitor", "Contribuabil:", "Inculpat:", "Creditor", "Autoritate beneficiară:",
+            "Parte civilă:", "Natura creanței:", "Temeiul măsurii:", "Regim juridic:",
+            "Debit principal:", "Obligații fiscale estimate:", "Creanță garantată:",
+            "Prejudiciu estimat:", "Cheltuieli", "Accesorii estimate:", "Cauțiune judiciară:",
+            "Plafon", "Total de recuperat:", "Cont special", "Cont consemnare",
+        ]):
+            story.append(Paragraph(f"<b>{line}</b>", STYLE_BODY))
+        else:
+            story.append(Paragraph(line, STYLE_BODY))
+
+    story.append(Spacer(1, 1.2 * cm))
+
+    sig_data = [
+        ["", "ORGAN EMITENT / EXECUTOR JUDECĂTORESC,"],
+        ["", "Semnătură și ștampilă oficială L.S."],
+    ]
+    sig_table = Table(sig_data, colWidths=[8 * cm, 8 * cm])
+    sig_table.setStyle(TableStyle([
+        ("FONTNAME", (1, 0), (1, 0), FONT_BOLD),
+        ("FONTNAME", (1, 1), (1, -1), FONT_ITALIC),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ALIGN", (1, 0), (1, -1), "CENTER"),
+    ]))
+    story.append(sig_table)
+
+    doc.build(story)
+
+
 def generate_scenario_pdfs() -> None:
     """Parcurge data/scenarios/*.json și generează PDF-urile în data/pdfs/."""
     out_dir = config.DATA_DIR / "pdfs"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Generez PDF-uri pentru scenarii în {out_dir}...")
+    print(f"Generez PDF-uri digitale pentru scenarii în {out_dir}...")
     for path in sorted(config.SCENARIOS_DIR.glob("*.json")):
         raw = json.loads(path.read_text(encoding="utf-8"))
         scenario_id = raw["scenario_id"]
@@ -334,7 +408,9 @@ def generate_scenario_pdfs() -> None:
         text = doc_data.get("text", "")
         out_path = out_dir / f"{scenario_id}.pdf"
 
-        if "SISTARE" in text.upper():
+        if "SECHESTRU" in text.upper():
+            _build_sechestru(doc_data, out_path)
+        elif "SISTARE" in text.upper():
             _build_sistare(doc_data, out_path)
         elif any(kw in text.upper() for kw in ["INSPECTORATUL", "DOSAR PENAL", "POLITIE", "PARCHET"]):
             _build_autoritate(doc_data, out_path)
@@ -343,7 +419,176 @@ def generate_scenario_pdfs() -> None:
 
         print(f"  [OK] {scenario_id} -> {out_path.name}")
 
-    print(f"Toate PDF-urile au fost generate cu succes în {out_dir}\n")
+    print(f"Toate PDF-urile digitale au fost generate cu succes în {out_dir}\n")
+
+
+# --------------- Generare PDF-uri SCANATE / CU ZGOMOT (Blur, Rotire, Low-Res) ---------------
+
+def _degrade_page_image(
+    png_bytes: bytes,
+    *,
+    angle_deg: float = -1.8,
+    blur_radius: float = 0.9,
+    jpeg_quality: int = 35,
+    speckle_count: int = 900,
+    seed: int = 42,
+) -> bytes:
+    """Aplică efecte realiste de scanare pe imaginea unei pagini PDF:
+    - tente gri/gălbui de hârtie scanată;
+    - dungă orizontală de pliere (foaie împăturită în plic);
+    - ștampilă rotundă de registratură / executor;
+    - zgomot „salt & pepper” (pete de toner și praf pe sticla scannerului);
+    - rotire ușoară (foaie trasă strâmb de ADF-ul scannerului) cu margine întunecată;
+    - defocalizare optică (Gaussian blur) + compresie JPEG la rezoluție redusă.
+    """
+    from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+
+    rng = random.Random(seed)
+    img = Image.open(io.BytesIO(png_bytes)).convert("RGB")
+    w, h = img.size
+
+    # 1. Tentă ușoară de hârtie scanată și scădere ușoară de contrast
+    paper_tint = Image.new("RGB", (w, h), (244, 242, 236))
+    img = Image.blend(img, paper_tint, alpha=0.14)
+    img = ImageEnhance.Contrast(img).enhance(0.88)
+
+    draw = ImageDraw.Draw(img)
+
+    # 2. Dungă de îndoire la mijlocul paginii (document scos din plic)
+    fold_y = int(h * rng.uniform(0.46, 0.54))
+    draw.line([(0, fold_y), (w, fold_y + rng.randint(-4, 4))], fill=(210, 208, 202), width=2)
+    draw.line([(0, fold_y + 2), (w, fold_y + 2 + rng.randint(-4, 4))], fill=(232, 230, 225), width=1)
+
+    # 3. Zgomot „salt & pepper” (praf/toner pe scanner)
+    for _ in range(speckle_count):
+        sx = rng.randint(4, w - 5)
+        sy = rng.randint(4, h - 5)
+        shade = rng.randint(45, 165)
+        size = 1 if rng.random() < 0.82 else 2
+        draw.rectangle([(sx, sy), (sx + size, sy + size)], fill=(shade, shade, shade))
+
+    # 5. Rotire (skew de scanare) cu fundal gri-închis pe marginile exterioare
+    rotated = img.rotate(
+        angle_deg,
+        resample=Image.BICUBIC,
+        expand=False,
+        fillcolor=(205, 203, 198),
+    )
+
+    # 6. Ramă subțire de umbră la marginea sticlei scannerului
+    border_draw = ImageDraw.Draw(rotated)
+    border_draw.rectangle([(0, 0), (w - 1, h - 1)], outline=(160, 158, 152), width=3)
+
+    # 7. Blur optic (GaussianBlur)
+    if blur_radius > 0:
+        rotated = rotated.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+
+    # 8. Compresie JPEG cu artefacte (rezoluție / calitate redusă)
+    out_buf = io.BytesIO()
+    rotated.save(out_buf, format="JPEG", quality=jpeg_quality, optimize=False)
+    return out_buf.getvalue()
+
+
+def _create_scanned_pdf(
+    clean_pdf_path: Path,
+    out_pdf_path: Path,
+    ground_truth_text: str,
+    *,
+    dpi: int = 105,
+    angle_deg: float = -1.8,
+    blur_radius: float = 0.9,
+    jpeg_quality: int = 35,
+    speckle_count: int = 900,
+    seed: int = 42,
+) -> None:
+    """Convertește un PDF digital într-un PDF 100% rasterizat (scanat, rotit, blurat, low-res)."""
+    try:
+        import pymupdf
+    except ImportError:
+        import fitz as pymupdf
+
+    with pymupdf.open(str(clean_pdf_path)) as src_doc:
+        dst_doc = pymupdf.open()
+        for page_idx, page in enumerate(src_doc):
+            pix = page.get_pixmap(dpi=dpi)
+            degraded_jpg = _degrade_page_image(
+                pix.tobytes("png"),
+                angle_deg=angle_deg,
+                blur_radius=blur_radius,
+                jpeg_quality=jpeg_quality,
+                speckle_count=speckle_count,
+                seed=seed + page_idx,
+            )
+            rect = page.rect  # A4
+            new_page = dst_doc.new_page(width=rect.width, height=rect.height)
+            new_page.insert_image(rect, stream=degraded_jpg)
+
+        # Păstrăm textul de referință în metadatele PDF-ului exclusiv ca fallback offline
+        # (când LLM_ENABLED=true, pagina nu are text selectabil și intră în Bedrock Vision OCR)
+        dst_doc.set_metadata({
+            "title": out_pdf_path.stem,
+            "author": "Scanner Simulator LexOps",
+            "subject": ground_truth_text,
+        })
+        dst_doc.save(str(out_pdf_path))
+        dst_doc.close()
+
+
+def generate_scanned_noisy_pdfs() -> None:
+    """Generează variante scanate (blurate, rotite, low-res, cu zgomot) în data/pdfs_scanned/."""
+    clean_dir = config.DATA_DIR / "pdfs"
+    scan_dir = config.DATA_DIR / "pdfs_scanned"
+    scan_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Generez PDF-uri SCANATE / CU ZGOMOT în {scan_dir}...")
+
+    # 1. Pentru fiecare scenariu S1..S16 generăm o variantă scanată realistă (rotită + blur + low-res + zgomot)
+    angles = [-2.1, 1.7, -1.5, 2.3, -1.9, 1.4, -2.4, 1.8]
+    for idx, path in enumerate(sorted(config.SCENARIOS_DIR.glob("*.json"))):
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        scenario_id = raw["scenario_id"]
+        text = raw.get("document", {}).get("text", "")
+        clean_pdf = clean_dir / f"{scenario_id}.pdf"
+        if not clean_pdf.exists():
+            continue
+
+        angle = angles[idx % len(angles)]
+        out_scan = scan_dir / f"{scenario_id}_scan_rotated_noisy.pdf"
+        _create_scanned_pdf(
+            clean_pdf,
+            out_scan,
+            text,
+            dpi=105,
+            angle_deg=angle,
+            blur_radius=0.85,
+            jpeg_quality=34,
+            speckle_count=950,
+            seed=100 + idx,
+        )
+        print(f"  [SCAN] {scenario_id} -> {out_scan.name} (dpi=105, angle={angle:+.1f}°, blur=0.85, q=34)")
+
+    # 2. Variante speciale de stres vizual pentru demo (S1, S4, S7, S8):
+    #    - _blur_heavy.pdf: nefocalizat puternic
+    #    - _lowres_fax.pdf: rezoluție foarte mică (82 DPI) + compresie agresivă + mult zgomot
+    #    - _skew_3deg.pdf:  rotit puternic (-3.2°)
+    showcase_ids = ["S1", "S4", "S7", "S8"]
+    profiles = [
+        ("blur_heavy", dict(dpi=100, angle_deg=-1.2, blur_radius=1.45, jpeg_quality=32, speckle_count=700)),
+        ("lowres_fax", dict(dpi=82, angle_deg=1.6, blur_radius=0.75, jpeg_quality=20, speckle_count=1800)),
+        ("skew_3deg", dict(dpi=115, angle_deg=-3.2, blur_radius=0.65, jpeg_quality=38, speckle_count=1100)),
+    ]
+    for sc_id in showcase_ids:
+        sc_path = config.SCENARIOS_DIR / f"{sc_id}.json"
+        clean_pdf = clean_dir / f"{sc_id}.pdf"
+        if not sc_path.exists() or not clean_pdf.exists():
+            continue
+        text = json.loads(sc_path.read_text(encoding="utf-8")).get("document", {}).get("text", "")
+        for tag, params in profiles:
+            out_variant = scan_dir / f"{sc_id}_{tag}.pdf"
+            _create_scanned_pdf(clean_pdf, out_variant, text, seed=500, **params)
+            print(f"  [DEMO] {sc_id} -> {out_variant.name}")
+
+    print(f"Toate PDF-urile scanate / cu zgomot au fost salvate în {scan_dir}\n")
 
 
 # --------------- Generare PDF răspuns bancă ---------------
@@ -434,6 +679,7 @@ def render_bank_response_pdf(case_id: str, letter_text: str, output_dir: Path | 
 
 if __name__ == "__main__":
     generate_scenario_pdfs()
+    generate_scanned_noisy_pdfs()
     print("Testare generare răspuns bancă:")
     demo_letter = (
         "Către: BIROUL EXECUTORULUI JUDECĂTORESC POPESCU ION\n"
