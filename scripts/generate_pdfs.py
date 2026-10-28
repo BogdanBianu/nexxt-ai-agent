@@ -321,6 +321,68 @@ def _build_autoritate(doc_data: dict, out_path: Path) -> None:
     doc.build(story)
 
 
+def _build_sechestru(doc_data: dict, out_path: Path) -> None:
+    """Layout distinct pentru Încheiere / Ordonanță de Sechestru Asigurător (Art. 952 CPC / Art. 249 CPP)."""
+    doc = SimpleDocTemplate(
+        str(out_path),
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+    )
+    story = []
+    text = doc_data.get("text", "")
+    lines = [l for l in text.split("\n") if l.strip()]
+
+    if lines:
+        story.append(Paragraph(lines[0], STYLE_BEJ_HEADER))
+    for line in lines[1:3]:
+        if "Dosar" in line or "Data:" in line:
+            story.append(Paragraph(line, STYLE_BEJ_SUBHEADER))
+
+    story.append(Spacer(1, 0.4 * cm))
+
+    banner = Table([["MĂSURĂ ASIGURĂTORIE — SECHESTRU ASIGURĂTOR"]], colWidths=[16 * cm])
+    banner.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), HexColor("#4A2500")),
+        ("TEXTCOLOR", (0, 0), (-1, -1), white),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, -1), FONT_BOLD),
+        ("FONTSIZE", (0, 0), (-1, -1), 11.5),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.append(banner)
+    story.append(Spacer(1, 0.6 * cm))
+
+    for line in lines[3:]:
+        if any(prefix in line for prefix in [
+            "Debitor:", "Creditor:", "Natura creanței:", "Debit principal:",
+            "Cheltuieli de executare:", "Total de recuperat:", "Cont consemnare",
+        ]):
+            story.append(Paragraph(f"<b>{line}</b>", STYLE_BODY))
+        else:
+            story.append(Paragraph(line, STYLE_BODY))
+
+    story.append(Spacer(1, 1.2 * cm))
+
+    sig_data = [
+        ["", "ORGAN EMITENT / EXECUTOR JUDECĂTORESC,"],
+        ["", "Semnătură și ștampilă oficială L.S."],
+    ]
+    sig_table = Table(sig_data, colWidths=[8 * cm, 8 * cm])
+    sig_table.setStyle(TableStyle([
+        ("FONTNAME", (1, 0), (1, 0), FONT_BOLD),
+        ("FONTNAME", (1, 1), (1, -1), FONT_ITALIC),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ALIGN", (1, 0), (1, -1), "CENTER"),
+    ]))
+    story.append(sig_table)
+
+    doc.build(story)
+
+
 def generate_scenario_pdfs() -> None:
     """Parcurge data/scenarios/*.json și generează PDF-urile în data/pdfs/."""
     out_dir = config.DATA_DIR / "pdfs"
@@ -334,7 +396,9 @@ def generate_scenario_pdfs() -> None:
         text = doc_data.get("text", "")
         out_path = out_dir / f"{scenario_id}.pdf"
 
-        if "SISTARE" in text.upper():
+        if "SECHESTRU" in text.upper():
+            _build_sechestru(doc_data, out_path)
+        elif "SISTARE" in text.upper():
             _build_sistare(doc_data, out_path)
         elif any(kw in text.upper() for kw in ["INSPECTORATUL", "DOSAR PENAL", "POLITIE", "PARCHET"]):
             _build_autoritate(doc_data, out_path)

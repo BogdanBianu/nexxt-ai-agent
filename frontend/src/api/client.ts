@@ -9,13 +9,31 @@ import type {
   ScenarioInfo,
 } from "../types/contracts";
 
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const PRIMARY_API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const FALLBACK_API = "http://127.0.0.1:8765";
+let activeApiBase = PRIMARY_API;
+
+// Adresa serverului folosită acum (după un eventual fallback); afișată în starea „server oprit”
+export const apiBase = () => activeApiBase;
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${activeApiBase}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...init,
+    });
+  } catch (err) {
+    if (activeApiBase === PRIMARY_API) {
+      res = await fetch(`${FALLBACK_API}${path}`, {
+        headers: { "Content-Type": "application/json" },
+        ...init,
+      });
+      activeApiBase = FALLBACK_API;
+    } else {
+      throw err;
+    }
+  }
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: ${await res.text()}`);
   }
@@ -29,7 +47,7 @@ export const api = {
   getCase: (caseId: string) => json<Case>(`/api/cases/${caseId}`),
   getCaseEvents: (caseId: string) => json<AgentEvent[]>(`/api/cases/${caseId}/events`),
   getCaseAudit: (caseId: string) => json<AuditEntry[]>(`/api/cases/${caseId}/audit`),
-  responsePdfUrl: (caseId: string) => `${API_BASE}/api/cases/${caseId}/response-pdf`,
+  responsePdfUrl: (caseId: string) => `${activeApiBase}/api/cases/${caseId}/response-pdf`,
   createFromScenario: (scenarioId: string) =>
     json<Case>("/api/cases/from-scenario", {
       method: "POST",
@@ -47,7 +65,7 @@ export async function uploadDocument(file: File, scenarioId: string): Promise<Ca
   const form = new FormData();
   form.append("file", file);
   form.append("scenario_id", scenarioId);
-  const res = await fetch(`${API_BASE}/api/cases/upload`, { method: "POST", body: form });
+  const res = await fetch(`${activeApiBase}/api/cases/upload`, { method: "POST", body: form });
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
     try {

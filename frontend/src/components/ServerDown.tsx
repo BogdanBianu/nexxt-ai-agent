@@ -1,7 +1,7 @@
 // Starea „serverul nu răspunde”: explică ce s-a întâmplat, cum se repornește și reîncearcă singură. Proprietar: Om4.
 import { useEffect, useState } from "react";
 import { LoaderCircle, RotateCw, ServerOff } from "lucide-react";
-import { API_BASE } from "../api/client";
+import { apiBase } from "../api/client";
 
 const RETRY_MS = 5000;
 
@@ -56,7 +56,7 @@ export function ServerDown({ onRetry, auto = true, compact = false }: Props) {
         <div className="min-w-0">
           <h2 className="display text-xl text-danger-ink">Nu ne putem conecta la server</h2>
           <p className="mt-2 text-sm leading-relaxed">
-            Backend-ul LexOps nu răspunde la <span className="font-mono text-[13px]">{API_BASE}</span>. Pornește-l dintr-un terminal:
+            Backend-ul LexOps nu răspunde la <span className="font-mono text-[13px]">{apiBase()}</span>. Pornește-l dintr-un terminal:
           </p>
           <pre className="mt-3 overflow-x-auto rounded-md bg-paper px-3.5 py-2.5 font-mono text-[12.5px] ring-1 ring-line">
             cd backend{"\n"}../.venv/bin/uvicorn app.main:app --reload --port 8000

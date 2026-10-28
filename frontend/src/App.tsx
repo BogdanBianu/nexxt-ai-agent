@@ -10,6 +10,7 @@ import { CaseInbox } from "./components/CaseInbox";
 import { DocumentViewer } from "./components/DocumentViewer";
 import { HitlWorkbench, ReviewHistory } from "./components/HitlWorkbench";
 import { ServerDown } from "./components/ServerDown";
+import { SechestreInbox } from "./components/SechestreInbox";
 import type { Case } from "./types/contracts";
 import { formatRon } from "./lib/ui";
 
@@ -22,6 +23,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function App() {
+  const [activeModule, setActiveModule] = useState<string>("popriri");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [animate, setAnimate] = useState(false);
   const [replayDone, setReplayDone] = useState(false);
@@ -86,9 +88,13 @@ export default function App() {
   }, [loadCase]);
 
   return (
-    <AppShell onHome={home}>
+    <AppShell onHome={home} activeModule={activeModule} onSelectModule={setActiveModule}>
       {!selectedId ? (
-        <CaseInbox onOpen={open} />
+        activeModule === "sechestre" ? (
+          <SechestreInbox onOpen={open} />
+        ) : (
+          <CaseInbox onOpen={open} />
+        )
       ) : (
         caseError && !current ? (
           <ServerDown onRetry={loadCase} />

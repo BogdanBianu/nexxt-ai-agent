@@ -1,0 +1,87 @@
+{
+  "scenario_id": "S10",
+  "title": "Sechestru asigurător — Suspiciune disipare fonduri în diurnă (E06)",
+  "description": "Ordonanță de instituire a sechestrului asigurător pentru 20.000 RON. În lunile anterioare debitorul încasa 8.000 RON salariu, iar după instituirea măsurii asigurătorii încasează exact 8.000 RON sub titlul 'Diurna delegatie externa'. Agentul de anomalii blochează dosarul cu E06 pentru verificarea ofițerului.",
+  "document": {
+    "document_id": "DOC-S10",
+    "filename": "ordonanta_sechestru_asigurator_BEJ_9012_2026.pdf",
+    "received_at": "2026-10-28T14:30:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC CONSTANTINESCU VICTOR\nDosarul de executare nr. 9012/2026\nData: 12.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII ȘI SECHESTRU ASIGURĂTOR\n\nÎn dosarul de executare nr. 9012/2026, în temeiul Încheierii de Sechestru Asigurător, dispun ÎNFIINȚAREA POPRIRII ȘI A SECHESTRULUI ASIGURĂTOR asupra conturilor deținute de:\nDebitor: STROE VICTOR, CNP: 1850615400011\nCreditor: ALPHA LEASING ROMANIA IFN S.A.\nNatura creanței: Comercială\nDebit principal: 18.500,00 RON\nCheltuieli de executare: 1.500,00 RON\nTotal de recuperat: 20.000,00 RON\n\nCont consemnare IBAN: RO49AAAA1B31007593840000.\nSemnătură și ștampilă L.S.",
+    "pdf_path": "pdfs/S10.pdf"
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-010",
+        "full_name": "STROE VICTOR",
+        "national_id": "1850615400011",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Dorobanților nr. 18, București"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO49AAAA1B31007593840000",
+        "customer_id": "CUST-010",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0.0,
+        "current_balance": 8000.0
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S10-08",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-08-14",
+        "direction": "CREDIT",
+        "amount": 8000.0,
+        "counterparty_name": "SC EURO TRANS CARGO SRL",
+        "counterparty_iban": null,
+        "description": "Salariu luna Iulie"
+      },
+      {
+        "tx_id": "TX-S10-09",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-09-14",
+        "direction": "CREDIT",
+        "amount": 8000.0,
+        "counterparty_name": "SC EURO TRANS CARGO SRL",
+        "counterparty_iban": null,
+        "description": "Salariu luna August"
+      },
+      {
+        "tx_id": "TX-S10-10",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-16",
+        "direction": "CREDIT",
+        "amount": 8000.0,
+        "counterparty_name": "SC EURO TRANS CARGO SRL",
+        "counterparty_iban": null,
+        "description": "Diurna delegatie externa"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "EXCEPTION_FLAGGED",
+    "amount_to_hold": 0.0,
+    "exception_codes": ["E06"],
+    "amount_after_review": 2666.67
+  },
+  "demo_review": {
+    "reviewer": "ofiter.sechestre@raiffeisen.ro",
+    "overrides": [
+      {
+        "tx_id": "TX-S10-10",
+        "category": "SALARIU",
+        "note": "Aceeași sumă (8.000 RON) și același angajator ca salariul din lunile anterioare."
+      }
+    ],
+    "resolve_codes": ["E06"],
+    "note": "Reclasificat ca salariu și aplicat sechestru asigurător 1/3."
+  }
+}

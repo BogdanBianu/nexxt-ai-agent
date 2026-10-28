@@ -6,10 +6,12 @@ import type { ModuleInfo } from "../types/contracts";
 
 interface Props {
   onHome: () => void;
+  activeModule?: string;
+  onSelectModule?: (moduleId: string) => void;
   children: ReactNode;
 }
 
-export function AppShell({ onHome, children }: Props) {
+export function AppShell({ onHome, activeModule = "popriri", onSelectModule, children }: Props) {
   const [modules, setModules] = useState<ModuleInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,14 +44,20 @@ export function AppShell({ onHome, children }: Props) {
 
           <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" aria-label="Module">
             {modules.map((m) => {
-              const active = m.status === "ACTIVE";
-              return active ? (
+              const enabled = m.status === "ACTIVE" || m.module_id === "sechestre";
+              const isCurrent = m.module_id === activeModule;
+              return enabled ? (
                 <button
                   key={m.module_id}
-                  onClick={onHome}
+                  onClick={() => {
+                    onSelectModule?.(m.module_id);
+                    onHome();
+                  }}
                   title={m.description}
-                  aria-current="page"
-                  className="display shrink-0 rounded-md bg-ink px-3.5 py-2 text-sm text-sun"
+                  aria-current={isCurrent ? "page" : undefined}
+                  className={`display shrink-0 rounded-md px-3.5 py-2 text-sm transition-colors duration-150 ${
+                    isCurrent ? "bg-ink text-sun" : "text-ink hover:bg-ink/10"
+                  }`}
                 >
                   {m.name}
                 </button>
