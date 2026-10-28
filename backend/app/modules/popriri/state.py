@@ -1,4 +1,4 @@
-"""Starea grafului LangGraph pentru modulul de popriri. Proprietar: Om1.
+"""Starea grafului LangGraph pentru modulele juridice LexOps. Proprietar: Om1.
 
 Fiecare agent primește starea și întoarce DOAR câmpurile pe care le modifică.
 `exceptions` se ADUNĂ (reducer operator.add): fiecare agent își adaugă excepțiile.
@@ -27,6 +27,9 @@ class PopririState(TypedDict, total=False):
     outcome: CaseOutcome | None
     exceptions: Annotated[list[ExceptionFlag], operator.add]
     stop_after_reconciliation: bool        # erori de identitate -> direct la OUTCOME
+    skip_reason: str                       # motiv opțional pentru evenimentul SKIPPED pe agenții 3-5
+    aml_flags: list[ExceptionFlag]         # alerte AML specifice modulului autoritati
+    gdpr_right: str                        # dreptul invocat în modulul gdpr (ACCES/STERGERE/OPOZITIE/ANSPDCP)
 
 
 # Câmpuri cu reducer (pentru runner-ul secvențial de rezervă)

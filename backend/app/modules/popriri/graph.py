@@ -3,13 +3,17 @@
     extraction -> reconciliation -+-> (stop: identitate / sistare) -> outcome
                                   +-> income_classifier -> rule_engine -> anomaly -> outcome
 
-Dacă LangGraph nu e instalat, rulează un executor secvențial cu ACEEAȘI logică de rutare
-(util pentru teste rapide și ca plasă de siguranță la demo).
+Folosește motorul comun LangGraph din `app.core.graph`.
 """
-from app.contracts import AgentName, AgentStatus, DocType
+from app.core.graph import (
+    build_six_agent_langgraph,
+    emit_skipped_middle_agents as _emit_skipped_middle_agents,
+    route_after_reconciliation,
+    run_six_agent_graph,
+    run_six_agent_sequential,
+)
 from .agents import anomaly, extraction, income_classifier, outcome, reconciliation, rule_engine
 from .agents.context import AgentContext
-from .state import PopririState, merge
 
 NODES = {
     "extraction": extraction.run,
@@ -21,64 +25,13 @@ NODES = {
 }
 
 
-def route_after_reconciliation(state: dict) -> str:
-    if state.get("stop_after_reconciliation"):
-        return "outcome"
-    if state["order"].doc_type == DocType.POPRIRE_SISTARE:
-        return "outcome"
-    return "income_classifier"
-
-
-def _emit_skipped_middle_agents(state: dict, ctx: AgentContext) -> None:
-    """Când graful sare direct de la RECONCILIATION la OUTCOME (ex. sistare sau CNP invalid),
-    notificăm UI-ul lui Om4 că nodurile intermediare au fost sărite intenționat."""
-    reason = ("Adresă de sistare poprire — nu necesită calcul de reținere"
-              if state["order"].doc_type == DocType.POPRIRE_SISTARE
-              else "Excepție blocantă de reconciliere/identitate — oprire timpurie")
-    for agent_name in (AgentName.INCOME_CLASSIFIER, AgentName.RULE_ENGINE, AgentName.ANOMALY):
-        ctx.emit(agent_name, AgentStatus.SKIPPED, reason, {"skipped": True})
-
-
 def build_langgraph(ctx: AgentContext):
-    from langgraph.graph import END, START, StateGraph
-
-    def outcome_with_skip_events(s: dict) -> dict:
-        if route_after_reconciliation(s) == "outcome":
-            _emit_skipped_middle_agents(s, ctx)
-        return outcome.run(s, ctx)
-
-    g = StateGraph(PopririState)
-    for name, fn in NODES.items():
-        if name == "outcome":
-            g.add_node(name, outcome_with_skip_events)
-        else:
-            g.add_node(name, lambda s, _fn=fn: _fn(s, ctx))
-    g.add_edge(START, "extraction")
-    g.add_edge("extraction", "reconciliation")
-    g.add_conditional_edges("reconciliation", route_after_reconciliation,
-                            {"outcome": "outcome", "income_classifier": "income_classifier"})
-    g.add_edge("income_classifier", "rule_engine")
-    g.add_edge("rule_engine", "anomaly")
-    g.add_edge("anomaly", "outcome")
-    g.add_edge("outcome", END)
-    return g.compile()
+    return build_six_agent_langgraph(NODES, ctx)
 
 
 def run_sequential(state: dict, ctx: AgentContext) -> dict:
-    state = merge(dict(state), NODES["extraction"](state, ctx))
-    state = merge(state, NODES["reconciliation"](state, ctx))
-    if route_after_reconciliation(state) == "income_classifier":
-        for name in ("income_classifier", "rule_engine", "anomaly"):
-            state = merge(state, NODES[name](state, ctx))
-    else:
-        _emit_skipped_middle_agents(state, ctx)
-    return merge(state, NODES["outcome"](state, ctx))
+    return run_six_agent_sequential(NODES, state, ctx)
 
 
 def run_graph(initial: dict, ctx: AgentContext) -> dict:
-    initial.setdefault("exceptions", [])
-    try:
-        graph = build_langgraph(ctx)
-    except ImportError:
-        return run_sequential(initial, ctx)
-    return graph.invoke(initial)
+    return run_six_agent_graph(NODES, initial, ctx)

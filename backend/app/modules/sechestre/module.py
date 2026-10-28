@@ -15,11 +15,10 @@ from app.contracts import (
 )
 from app.core.core_banking import CoreBankingMock
 from app.core.events import EmitFn
+from app.core.graph import run_six_agent_graph
 from app.modules.popriri.agents import anomaly, income_classifier, outcome, reconciliation, rule_engine
 from app.modules.popriri.agents.context import AgentContext
 from app.modules.popriri.engine.rules import load_rulebook
-from app.modules.popriri.graph import _emit_skipped_middle_agents, route_after_reconciliation
-from app.modules.popriri.state import PopririState, merge
 from .extractor import run_sechestre_extraction
 
 AGENT_DOC_TYPE = {DocType.SECHESTRU_INSTITUIRE: DocType.POPRIRE_INFIINTARE,
@@ -38,42 +37,7 @@ SECHESTRE_NODES = {
 
 
 def _run_sechestre_graph(initial: dict, ctx: AgentContext) -> dict:
-    initial.setdefault("exceptions", [])
-    try:
-        from langgraph.graph import END, START, StateGraph
-
-        def outcome_with_skip(s: dict) -> dict:
-            if route_after_reconciliation(s) == "outcome":
-                _emit_skipped_middle_agents(s, ctx)
-            return outcome.run(s, ctx)
-
-        g = StateGraph(PopririState)
-        for name, fn in SECHESTRE_NODES.items():
-            if name == "outcome":
-                g.add_node(name, outcome_with_skip)
-            else:
-                g.add_node(name, lambda s, _fn=fn: _fn(s, ctx))
-        g.add_edge(START, "extraction")
-        g.add_edge("extraction", "reconciliation")
-        g.add_conditional_edges(
-            "reconciliation",
-            route_after_reconciliation,
-            {"outcome": "outcome", "income_classifier": "income_classifier"},
-        )
-        g.add_edge("income_classifier", "rule_engine")
-        g.add_edge("rule_engine", "anomaly")
-        g.add_edge("anomaly", "outcome")
-        g.add_edge("outcome", END)
-        return g.compile().invoke(initial)
-    except ImportError:
-        state = merge(dict(initial), SECHESTRE_NODES["extraction"](initial, ctx))
-        state = merge(state, SECHESTRE_NODES["reconciliation"](state, ctx))
-        if route_after_reconciliation(state) == "income_classifier":
-            for name in ("income_classifier", "rule_engine", "anomaly"):
-                state = merge(state, SECHESTRE_NODES[name](state, ctx))
-        else:
-            _emit_skipped_middle_agents(state, ctx)
-        return merge(state, SECHESTRE_NODES["outcome"](state, ctx))
+    return run_six_agent_graph(SECHESTRE_NODES, initial, ctx)
 
 
 def _sechestru_response_letter(case_order, decision) -> str:
