@@ -1,66 +1,66 @@
 {
   "scenario_id": "S10",
-  "title": "Sechestru asigurător — Suspiciune disipare fonduri în diurnă (E06)",
-  "description": "Ordonanță de instituire a sechestrului asigurător pentru 20.000 RON. În lunile anterioare debitorul încasa 8.000 RON salariu, iar după instituirea măsurii asigurătorii încasează exact 8.000 RON sub titlul 'Diurna delegatie externa'. Agentul de anomalii blochează dosarul cu E06 pentru verificarea ofițerului.",
+  "title": "Sechestru asigurător civil (Art. 952 CPC) — Suspiciune disipare fonduri în diurnă (E06)",
+  "description": "Încheiere civilă executorie pronunțată de Tribunalul București Secția a VI-a Civilă (Art. 952-955 CPC) pusă în executare prin BEJ Moraru Ștefan pentru un plafon de 34.000 RON. După emiterea încheierii de sechestru (12.10.2026), debitorul primește de la același angajator exact 9.000 RON (cât salariul din lunile anterioare), dar redenumit 'Diurna deplasare externa'. Agentul de anomalii blochează dosarul cu E06.",
   "document": {
-    "document_id": "DOC-S10",
-    "filename": "ordonanta_sechestru_asigurator_BEJ_9012_2026.pdf",
+    "document_id": "DOC-SECH-CIV-6204",
+    "filename": "incheiere_sechestru_asigurator_TB_6204_3_2026.pdf",
     "received_at": "2026-10-28T14:30:00Z",
     "content_type": "text/plain",
-    "text": "BIROUL EXECUTORULUI JUDECĂTORESC CONSTANTINESCU VICTOR\nDosarul de executare nr. 9012/2026\nData: 12.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII ȘI SECHESTRU ASIGURĂTOR\n\nÎn dosarul de executare nr. 9012/2026, în temeiul Încheierii de Sechestru Asigurător, dispun ÎNFIINȚAREA POPRIRII ȘI A SECHESTRULUI ASIGURĂTOR asupra conturilor deținute de:\nDebitor: STROE VICTOR, CNP: 1850615400011\nCreditor: ALPHA LEASING ROMANIA IFN S.A.\nNatura creanței: Comercială\nDebit principal: 18.500,00 RON\nCheltuieli de executare: 1.500,00 RON\nTotal de recuperat: 20.000,00 RON\n\nCont consemnare IBAN: RO49AAAA1B31007593840000.\nSemnătură și ștampilă L.S.",
+    "text": "TRIBUNALUL BUCUREȘTI — SECȚIA A VI-A CIVILĂ (PRIN BEJ MORARU ȘTEFAN)\nDosarul de sechestru asigurător nr. 6204/3/2026\nData emiterii: 12.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A. — Direcția Operațiuni Juridice și Măsuri Asigurătorii\nObiect: ÎNCHEIERE CIVILĂ EXECUTORIE ȘI PROCES-VERBAL DE INSTITUIRE A SECHESTRULUI ASIGURĂTOR CIVIL (ART. 952–955 COD PROCEDURĂ CIVILĂ)\n\nÎn baza Încheierii civile executorii pronunțate de Tribunalul București Secția a VI-a Civilă în Dosarul de sechestru asigurător nr. 6204/3/2026, dispunem INSTITUIREA SECHESTRULUI ASIGURĂTOR asupra sumelor de bani din conturile deținute de:\nDebitor pârât: VOICU DRAGOȘ MIHAIL, CNP: 1830924400238\nCreditor reclamant: BCR LEASING IFN S.A.\nRegim juridic: Creanță comercială în litigiu (Art. 952 alin. (1) Cod procedură civilă)\nCreanță garantată: 32.000,00 RON\nCauțiune judiciară: 2.000,00 RON\nPlafon sechestru asigurător: 34.000,00 RON\n\nCont special consemnare BEJ la dispoziția instanței IBAN: RO61BREL0002001890620400.\nPrezentul act poartă semnătură și ștampilă oficială a instanței și a executorului judecătoresc L.S.",
     "pdf_path": "pdfs/S10.pdf"
   },
   "bank": {
     "customers": [
       {
-        "customer_id": "CUST-010",
-        "full_name": "STROE VICTOR",
-        "national_id": "1850615400011",
+        "customer_id": "CUST-SECH-02",
+        "full_name": "VOICU DRAGOȘ MIHAIL",
+        "national_id": "1830924400238",
         "is_legal_entity": false,
         "status": "ACTIV",
-        "address": "Str. Dorobanților nr. 18, București"
+        "address": "Bd. Aviatorilor nr. 62, Sector 1, București"
       }
     ],
     "accounts": [
       {
-        "iban": "RO49AAAA1B31007593840000",
-        "customer_id": "CUST-010",
+        "iban": "RO58RZBR0000060032806204",
+        "customer_id": "CUST-SECH-02",
         "account_type": "CURENT",
         "currency": "RON",
         "opening_balance": 0.0,
-        "current_balance": 8000.0
+        "current_balance": 9000.0
       }
     ],
     "transactions": [
       {
-        "tx_id": "TX-S10-08",
-        "iban": "RO49AAAA1B31007593840000",
+        "tx_id": "TX-SECH10-08",
+        "iban": "RO58RZBR0000060032806204",
         "booking_date": "2026-08-14",
         "direction": "CREDIT",
-        "amount": 8000.0,
-        "counterparty_name": "SC EURO TRANS CARGO SRL",
+        "amount": 9000.0,
+        "counterparty_name": "SC DANUBIUS FREIGHT EXPEDITII SRL",
         "counterparty_iban": null,
         "description": "Salariu luna Iulie"
       },
       {
-        "tx_id": "TX-S10-09",
-        "iban": "RO49AAAA1B31007593840000",
+        "tx_id": "TX-SECH10-09",
+        "iban": "RO58RZBR0000060032806204",
         "booking_date": "2026-09-14",
         "direction": "CREDIT",
-        "amount": 8000.0,
-        "counterparty_name": "SC EURO TRANS CARGO SRL",
+        "amount": 9000.0,
+        "counterparty_name": "SC DANUBIUS FREIGHT EXPEDITII SRL",
         "counterparty_iban": null,
         "description": "Salariu luna August"
       },
       {
-        "tx_id": "TX-S10-10",
-        "iban": "RO49AAAA1B31007593840000",
+        "tx_id": "TX-SECH10-10",
+        "iban": "RO58RZBR0000060032806204",
         "booking_date": "2026-10-16",
         "direction": "CREDIT",
-        "amount": 8000.0,
-        "counterparty_name": "SC EURO TRANS CARGO SRL",
+        "amount": 9000.0,
+        "counterparty_name": "SC DANUBIUS FREIGHT EXPEDITII SRL",
         "counterparty_iban": null,
-        "description": "Diurna delegatie externa"
+        "description": "Diurna deplasare externa transport international"
       }
     ],
     "active_garnishments": []
@@ -70,18 +70,18 @@
     "status": "EXCEPTION_FLAGGED",
     "amount_to_hold": 0.0,
     "exception_codes": ["E06"],
-    "amount_after_review": 2666.67
+    "amount_after_review": 3000.0
   },
   "demo_review": {
     "reviewer": "ofiter.sechestre@raiffeisen.ro",
     "overrides": [
       {
-        "tx_id": "TX-S10-10",
+        "tx_id": "TX-SECH10-10",
         "category": "SALARIU",
-        "note": "Aceeași sumă (8.000 RON) și același angajator ca salariul din lunile anterioare."
+        "note": "Plată identică (9.000 RON) de la același angajator SC DANUBIUS FREIGHT EXPEDITII SRL redenumită în diurnă după comunicarea încheierii de sechestru."
       }
     ],
     "resolve_codes": ["E06"],
-    "note": "Reclasificat ca salariu și aplicat sechestru asigurător 1/3."
+    "note": "Reclasificat ca salariu și instituit sechestru asigurător 1/3 (3.000 RON)."
   }
 }

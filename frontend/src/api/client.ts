@@ -8,28 +8,13 @@ import type {
   ScenarioInfo,
 } from "../types/contracts";
 
-const PRIMARY_API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-const FALLBACK_API = "http://127.0.0.1:8765";
-let activeApiBase = PRIMARY_API;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(`${activeApiBase}${path}`, {
-      headers: { "Content-Type": "application/json" },
-      ...init,
-    });
-  } catch (err) {
-    if (activeApiBase === PRIMARY_API) {
-      res = await fetch(`${FALLBACK_API}${path}`, {
-        headers: { "Content-Type": "application/json" },
-        ...init,
-      });
-      activeApiBase = FALLBACK_API;
-    } else {
-      throw err;
-    }
-  }
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...init,
+  });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: ${await res.text()}`);
   }

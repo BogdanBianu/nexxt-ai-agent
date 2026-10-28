@@ -17,10 +17,7 @@ function ScenarioMenu({ onPick, busy }: { onPick: (id: string) => void; busy: bo
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api
-      .listScenarios()
-      .then((list) => setScenarios(list.filter((s) => s.scenario_id !== "S9" && s.scenario_id !== "S10")))
-      .catch(() => setScenarios([]));
+    api.listScenarios().then(setScenarios).catch(() => setScenarios([]));
   }, []);
 
   useEffect(() => {
@@ -147,14 +144,7 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
     api
       .listCases()
       .then((c) => {
-        setCases(
-          c.filter(
-            (item) =>
-              item.scenario_id !== "S9" &&
-              item.scenario_id !== "S10" &&
-              !(item.case_number?.includes("/AI/") || item.case_number?.includes("/P/")),
-          ),
-        );
+        setCases(c);
         setLoaded(true);
       })
       .catch((e: Error) => setError(e.message));

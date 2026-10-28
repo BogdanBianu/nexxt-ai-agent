@@ -122,7 +122,11 @@ def _call_bedrock(system: str, user: str, temperature: float, max_tokens: int) -
     if cached_text is not None:
         return cached_text
 
-    client = _get_bedrock_client()
+    try:
+        client = _get_bedrock_client()
+    except Exception as exc:
+        log.warning("AWS Bedrock client unavailable (%s), using deterministic fallback", exc)
+        return None
     candidates = [config.LLM_MODEL] + [m for m in _FALLBACK_BEDROCK_MODELS if m != config.LLM_MODEL]
     last_exc: Exception | None = None
 

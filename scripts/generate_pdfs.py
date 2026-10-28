@@ -337,13 +337,17 @@ def _build_sechestru(doc_data: dict, out_path: Path) -> None:
 
     if lines:
         story.append(Paragraph(lines[0], STYLE_BEJ_HEADER))
-    for line in lines[1:3]:
-        if "Dosar" in line or "Data:" in line:
-            story.append(Paragraph(line, STYLE_BEJ_SUBHEADER))
+    header_end = 1
+    for idx, line in enumerate(lines[1:5], start=1):
+        if line.startswith("CĂTRE:"):
+            header_end = idx
+            break
+        story.append(Paragraph(line, STYLE_BEJ_SUBHEADER))
+        header_end = idx + 1
 
     story.append(Spacer(1, 0.4 * cm))
 
-    banner = Table([["MĂSURĂ ASIGURĂTORIE — SECHESTRU ASIGURĂTOR"]], colWidths=[16 * cm])
+    banner = Table([["ACT OFICIAL — MĂSURĂ ASIGURĂTORIE / SECHESTRU ASIGURĂTOR"]], colWidths=[16 * cm])
     banner.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), HexColor("#4A2500")),
         ("TEXTCOLOR", (0, 0), (-1, -1), white),
@@ -356,10 +360,13 @@ def _build_sechestru(doc_data: dict, out_path: Path) -> None:
     story.append(banner)
     story.append(Spacer(1, 0.6 * cm))
 
-    for line in lines[3:]:
+    for line in lines[header_end:]:
         if any(prefix in line for prefix in [
-            "Debitor:", "Creditor:", "Natura creanței:", "Debit principal:",
-            "Cheltuieli de executare:", "Total de recuperat:", "Cont consemnare",
+            "Debitor", "Contribuabil:", "Inculpat:", "Creditor", "Autoritate beneficiară:",
+            "Parte civilă:", "Natura creanței:", "Temeiul măsurii:", "Regim juridic:",
+            "Debit principal:", "Obligații fiscale estimate:", "Creanță garantată:",
+            "Prejudiciu estimat:", "Cheltuieli", "Accesorii estimate:", "Cauțiune judiciară:",
+            "Plafon", "Total de recuperat:", "Cont special", "Cont consemnare",
         ]):
             story.append(Paragraph(f"<b>{line}</b>", STYLE_BODY))
         else:
