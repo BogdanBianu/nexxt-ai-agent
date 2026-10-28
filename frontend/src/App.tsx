@@ -8,7 +8,6 @@ import { CaseFacts, CaseFigures, CaseHeader } from "./components/CaseHeader";
 import { AuditTrail } from "./components/AuditTrail";
 import { InsolvencyAccounts, InsolvencyFacts, InsolvencyFigures, InsolvencyMain } from "./components/InsolvencyPanels";
 import { AuthorityFacts, AuthorityFigures, AuthorityReport, AuthorityRequest } from "./components/AuthorityPanels";
-import { CaseCopilot } from "./components/CaseCopilot";
 import { CaseInbox } from "./components/CaseInbox";
 import { DocumentViewer } from "./components/DocumentViewer";
 import { Home } from "./components/Home";
@@ -187,7 +186,6 @@ export default function App() {
               </div>
               <aside className="space-y-6">
                 <AgentPipeline caseId={selectedId} animate={animate} data={current} onReplayDone={onReplayDone} runKey={runKey} />
-                {current && replayDone && <CaseCopilot key={current.case_id} data={current} />}
               </aside>
             </div>
           </>
