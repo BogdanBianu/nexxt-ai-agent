@@ -204,6 +204,18 @@ def list_cases():
     return out
 
 
+@app.post("/api/cases/reset")
+def reset_cases():
+    """Golește toate dosarele și popririle înregistrate în memorie (pentru re-testare rapidă fără restart)."""
+    CASES.clear()
+    BANKS.clear()
+    EVENTS.clear()
+    PROCESSING_MS.clear()
+    AUDIT_LOG.clear()
+    REGISTERED.clear()
+    return {"status": "ok"}
+
+
 @app.post("/api/cases/from-scenario", response_model=Case)
 def create_case_from_scenario(body: CreateCaseFromScenario):
     """Creează și rulează un dosar dintr-un scenariu sintetic (S1..S8)."""
