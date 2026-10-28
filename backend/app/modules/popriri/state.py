@@ -7,13 +7,14 @@ import operator
 from typing import Annotated, Any, TypedDict
 
 from app.contracts import (Account, ActiveGarnishment, CaseOutcome, ClassifiedTransaction, Customer,
-                           ExceptionFlag, GarnishmentDecision, GarnishmentOrder, IncomingDocument,
+                           DocType, ExceptionFlag, GarnishmentDecision, GarnishmentOrder, IncomingDocument,
                            ReviewAction, Transaction)
 
 
 class PopririState(TypedDict, total=False):
     case_id: str
     document: IncomingDocument
+    doc_type_hint: DocType                 # tipul stabilit de Intake Router (LangGraph ignoră cheile nedeclarate)
     review: ReviewAction | None            # override-uri de la ofițer (re-rulare după HITL)
 
     order: GarnishmentOrder | None

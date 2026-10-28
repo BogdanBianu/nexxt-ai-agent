@@ -57,3 +57,12 @@ def test_audit_trail_has_agents_rules_and_hitl_review():
     actions = {a["action"] for a in audit}
     assert {"STARTED", "COMPLETED", "RULE_APPLIED", "EXCEPTION_RAISED", "HITL_REVIEW"} <= actions
     assert any(a["actor"] == "user:ofiter@test.ro" for a in audit)
+
+
+def test_sistare_keeps_router_doc_type_through_langgraph():
+    """S7: tipul stabilit de router (sistare) trebuie să ajungă la agenți; altfel e tratat ca înființare (E02/E09)."""
+    case = client.post("/api/cases/from-scenario", json={"scenario_id": "S7"}).json()
+    assert case["doc_type"] == "POPRIRE_SISTARE"
+    assert case["order"]["doc_type"] == "POPRIRE_SISTARE"
+    assert case["status"] == "LIFTED"
+    assert case["exceptions"] == []
