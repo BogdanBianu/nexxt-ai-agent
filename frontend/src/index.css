@@ -59,3 +59,55 @@
   letter-spacing: -0.025em;
   line-height: 1.1;
 }
+
+/* Mișcare: curbe ease-out puternice, toate sub 300 ms. Fără mișcare pentru cine o dezactivează din sistem. */
+@theme {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --animate-menu-in: menu-in 180ms var(--ease-out-strong) both;
+  --animate-item-in: item-in 220ms var(--ease-out-strong) both;
+  --animate-swipe-in: swipe-in 280ms var(--ease-out-strong) both;
+  --animate-swipe-out: swipe-out 200ms cubic-bezier(0.55, 0, 1, 0.45) both;
+  --animate-rise: rise 260ms var(--ease-out-strong) both;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+@keyframes item-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+/* Fișierul verificat iese spre stânga, următorul intră din dreapta */
+@keyframes swipe-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+@keyframes swipe-out {
+  to {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}

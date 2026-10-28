@@ -135,6 +135,7 @@ const MODULE_NAME: Record<string, string> = {
 
 const SINGULAR: [RegExp, string][] = [
   [/\b1 conturi marcate\b/g, "1 cont marcat"],
+  [/\b1 conturi active\b/g, "1 cont activ"],
   [/\b1 conturi\b/g, "1 cont"],
   [/\b1 popriri active\b/g, "1 poprire activă"],
   [/\b1 plăți\b/g, "1 plată"],

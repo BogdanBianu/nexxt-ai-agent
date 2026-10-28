@@ -120,7 +120,7 @@ export default function App() {
         view ? (
           <CaseInbox key={view} moduleId={view} onOpen={open} />
         ) : (
-          <Home onModule={goModule} onOpen={open} />
+          <Home onOpen={open} />
         )
       ) : (
         caseError && !current ? (
