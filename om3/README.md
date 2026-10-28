@@ -21,7 +21,7 @@ Tu ești creatorul lumii sintetice pe care rulăm demo-ul. Dacă scenariile tale
 ## 3. Specificația celor 8 Scenarii pe care trebuie să le avem în `data/scenarios/`
 
 > **FOARTE IMPORTANT:** Toate CNP-urile și IBAN-urile din JSON trebuie să fie **matematic valide** (altfel validatorul lui Om2 va ridica `E01`!).
-> Poți folosi CNP-uri valide precum `1850615400016`, `2900312400028` (verifică-le cu `validate_cnp` din `backend/app/core/validators.py`) și IBAN-ul valid `RO49AAAA1B31007593840000`.
+> Poți folosi CNP-uri valide precum `1850615400011`, `2900312400028` (verifică-le cu `validate_cnp` din `backend/app/core/validators.py`) și IBAN-ul valid `RO49AAAA1B31007593840000`.
 
 | ID | Titlu Scenariu | Ce trebuie să conțină JSON-ul | `expected` (Ground Truth) |
 | :--- | :--- | :--- | :--- |
@@ -29,7 +29,7 @@ Tu ești creatorul lumii sintetice pe care rulăm demo-ul. Dacă scenariile tale
 | **S2** *(De făcut)* | Mamă în concediu creștere copil — Venituri 100% protejate | Doar `Indemnizatie crestere copil` (3.500 RON) + `Alocatie de stat` (719 RON), sold 0. Datorie 5.000 RON. | `AUTO_PROCESSED`, `amount_to_hold: 0.0`, `exception_codes: []` (0 RON blocați, 100% protejat conform Art. 729!) |
 | **S3** *(De făcut)* | Popriri concurente — Pensie alimentară peste poprire comercială | Salariu 6.000 RON. Are deja în `active_garnishments` o poprire comercială care îi ia `2000.0` RON/lună (1/3). Vine a doua poprire pentru `INTRETINERE` (pensie alimentară). Plafonul cumulat de 1/2 (3.000 RON) lasă doar `1000.0` RON și declanșează `E04`. | `EXCEPTION_FLAGGED`, `amount_to_hold: 1000.0`, `exception_codes: ["E04"]` |
 | **S4** *(Gata)* | Eludare: Salariu deghizat în Diurnă (Momentul WOW) | 2 luni salariu 6.000 RON de la `SC CONSTRUCT PRO SRL`, apoi în luna popririi 6.000 RON cu descrierea `"Diurna delegatie externa"`. | `EXCEPTION_FLAGGED`, `amount_to_hold: 0.0`, `exception_codes: ["E06"]`, `amount_after_review: 2000.0` |
-| **S5** *(De făcut)* | Eroare în adresa executorului: CNP invalid | În textul adresei, CNP-ul are ultima cifră greșită (`1850615400019` în loc de `1850615400016`). | `EXCEPTION_FLAGGED`, `amount_to_hold: 0.0`, `exception_codes: ["E01"]` |
+| **S5** *(De făcut)* | Eroare în adresa executorului: CNP invalid | În textul adresei, CNP-ul are ultima cifră greșită (`1850615400019` în loc de `1850615400011`). | `EXCEPTION_FLAGGED`, `amount_to_hold: 0.0`, `exception_codes: ["E01"]` |
 | **S6** *(De făcut)* | Dublă poprire pe același dosar de executare (Duplicat) | Adresă de înființare poprire cu `case_number: "9988/2026"`, dar în `active_garnishments` există deja înregistrat dosarul `"9988/2026"`. | `EXCEPTION_FLAGGED`, `amount_to_hold: 0.0`, `exception_codes: ["E02"]` |
 | **S7** *(De făcut)* | Adresă de Sistare (Ridicare) Poprire după achitarea datoriei | Textul conține `"ADRESĂ DE SISTARE A POPRIRII"` pentru dosarul `"7700/2026"`, care există în `active_garnishments`. | `doc_type: "POPRIRE_SISTARE"`, `status: "LIFTED"`, `amount_to_hold: 0.0`, `exception_codes: []` |
 | **S8** *(De făcut)* | Solicitare de la Inspectoratul de Poliție / DNA (Demo Platformă LexOps) | Textul este o adresă oficială de la `"INSPECTORATUL GENERAL AL POLIȚIEI ROMÂNE — Serviciul Investigarea Criminalității Economice"` într-un `"DOSAR PENAL"`. Routerul o recunoaște și o trimite către modulul `autoritati` (în roadmap). | `doc_type: "CERERE_AUTORITATE"`, `status: "ROUTED_TO_OTHER_MODULE"`, `amount_to_hold: 0.0`, `exception_codes: []` |

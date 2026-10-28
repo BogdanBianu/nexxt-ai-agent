@@ -5,6 +5,9 @@ Rapide, testate unitar, și foarte convingătoare la demo:
 """
 import re
 import unicodedata
+from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
 
 _CNP_WEIGHTS = "279146358279"
 _CUI_WEIGHTS = "753217532"
@@ -61,6 +64,84 @@ def validate_iban(iban: str | None) -> bool:
     rearranged = iban[4:] + iban[:4]
     digits = "".join(str(int(c, 36)) for c in rearranged)
     return int(digits) % 97 == 1
+
+
+# Codurile de bancă (primele 4 caractere ale BIC-ului) care apar în IBAN-urile RO, poziția 5-8.
+RO_BANK_CODES: dict[str, str] = {
+    "TREZ": "Trezoreria Statului",
+    "NBOR": "Banca Națională a României",
+    "RZBR": "Raiffeisen Bank",
+    "BTRL": "Banca Transilvania",
+    "BRDE": "BRD - Groupe Société Générale",
+    "RNCB": "Banca Comercială Română",
+    "INGB": "ING Bank",
+    "BACX": "UniCredit Bank",
+    "CECE": "CEC Bank",
+    "OTPV": "OTP Bank",
+    "BUCU": "Alpha Bank",
+    "UGBI": "Garanti BBVA",
+    "BITR": "Intesa Sanpaolo Bank",
+    "PIRB": "First Bank",
+    "FNNB": "Credit Europe Bank",
+    "CARP": "Patria Bank",
+    "EXIM": "EximBank",
+    "BREL": "Libra Internet Bank",
+    "PORL": "ProCredit Bank",
+    # IBAN-ul exemplu din standard, folosit în scenariile sintetice
+    "AAAA": "Bancă de test (IBAN exemplu)",
+}
+TREASURY_CODE = "TREZ"
+
+
+def iban_bank_code(iban: str | None) -> str | None:
+    """Codul băncii dintr-un IBAN românesc (ex. RO49 RZBR ... -> "RZBR"); None dacă nu e IBAN RO."""
+    if not iban:
+        return None
+    iban = iban.replace(" ", "").upper()
+    if not iban.startswith("RO") or len(iban) < 8:
+        return None
+    return iban[4:8]
+
+
+@dataclass(frozen=True)
+class IbanCheck:
+    ok: bool
+    bank_code: str | None
+    bank_name: str | None
+    is_treasury: bool
+    reason: str                                 # mesaj în română, afișabil ofițerului
+
+
+def check_consignment_iban(iban: str | None, expect_treasury: bool = False) -> IbanCheck:
+    """IBAN-ul de consemnare: valid mod-97, românesc, emis de o bancă/trezorerie cunoscută.
+
+    `expect_treasury=True` pentru creanțe fiscale (ANAF / organe fiscale locale), unde sumele
+    se virează într-un cont de Trezorerie.
+    """
+    if not validate_iban(iban):
+        return IbanCheck(False, None, None, False, f"IBAN-ul de consemnare ({iban}) lipsește sau este invalid.")
+    code = iban_bank_code(iban)
+    if code is None:
+        return IbanCheck(False, None, None, False, f"IBAN-ul de consemnare ({iban}) nu este un cont din România.")
+    name = RO_BANK_CODES.get(code)
+    if name is None:
+        return IbanCheck(False, code, None, False,
+                         f"Codul de bancă {code} din IBAN-ul de consemnare nu aparține unei bănci din România.")
+    is_treasury = code == TREASURY_CODE
+    if expect_treasury and not is_treasury:
+        return IbanCheck(False, code, name, False,
+                         f"Creanță fiscală, dar IBAN-ul de consemnare este la {name}, nu la Trezoreria Statului.")
+    return IbanCheck(True, code, name, is_treasury, f"Cont de consemnare la {name}.")
+
+
+def validate_issue_date(issue_date: date | None, received: date | None = None) -> bool:
+    """Data emiterii adresei există și nu e în viitor față de data primirii (implicit: azi)."""
+    return issue_date is not None and issue_date <= (received or date.today())
+
+
+def validate_amounts(principal: Decimal, costs: Decimal, total: Decimal) -> bool:
+    """Debit principal + cheltuieli de executare = total de recuperat."""
+    return principal + costs == total
 
 
 def validate_national_id(value: str | None) -> bool:

@@ -7,7 +7,7 @@
     "filename": "adresa_infiintare_poprire_BEJ_1234_2026.pdf",
     "received_at": "2026-10-28T09:30:00Z",
     "content_type": "text/plain",
-    "text": "BIROUL EXECUTORULUI JUDECĂTORESC POPESCU ION\nDosarul de executare nr. 1234/2026\nData: 25.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nSubsemnatul POPESCU ION, executor judecătoresc, în baza titlului executoriu din dosarul de executare nr. 1234/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: IONESCU MIHAI, CNP: 1850615400016\nCreditor: ALPHA LEASING IFN S.A.\nNatura creanței: Comercială\nDebit principal: 14.000,00 RON\nCheltuieli de executare: 1.000,00 RON\nTotal de recuperat: 15.000,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO49AAAA1B31007593840000.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC POPESCU ION\nDosarul de executare nr. 1234/2026\nData: 25.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nSubsemnatul POPESCU ION, executor judecătoresc, în baza titlului executoriu din dosarul de executare nr. 1234/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: IONESCU MIHAI, CNP: 1850615400011\nCreditor: ALPHA LEASING IFN S.A.\nNatura creanței: Comercială\nDebit principal: 14.000,00 RON\nCheltuieli de executare: 1.000,00 RON\nTotal de recuperat: 15.000,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO49AAAA1B31007593840000.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
     "pdf_path": null
   },
   "bank": {
@@ -15,7 +15,7 @@
       {
         "customer_id": "CUST-001",
         "full_name": "IONESCU MIHAI",
-        "national_id": "1850615400016",
+        "national_id": "1850615400011",
         "is_legal_entity": false,
         "status": "ACTIV",
         "address": "Str. Primăverii nr. 10, București"
