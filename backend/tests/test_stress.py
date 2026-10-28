@@ -66,7 +66,7 @@ def test_binary_garbage_txt_does_not_crash():
     assert res.json()["status"] != "FAILED"
 
 
-def test_review_with_unknown_tx_and_on_routed_case_does_not_crash():
+def test_review_with_unknown_tx_and_on_other_module_does_not_crash():
     s1 = client.post("/api/cases/from-scenario", json={"scenario_id": "S1"}).json()
     res = client.post(f"/api/cases/{s1['case_id']}/review",
                       json={"reviewer": "x", "overrides": [{"tx_id": "NU-EXISTA", "category": "SALARIU"}]})
@@ -74,7 +74,8 @@ def test_review_with_unknown_tx_and_on_routed_case_does_not_crash():
 
     s8 = client.post("/api/cases/from-scenario", json={"scenario_id": "S8"}).json()
     res = client.post(f"/api/cases/{s8['case_id']}/review", json={"reviewer": "x", "resolve_codes": ["E01"]})
-    assert res.status_code == 200 and res.json()["status"] == "ROUTED_TO_OTHER_MODULE"
+    assert res.status_code == 200 and res.json()["status"] != "FAILED"
+    assert res.json()["module_id"] == "autoritati"
 
 
 def test_invalid_review_payload_is_422():
