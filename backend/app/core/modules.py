@@ -30,16 +30,14 @@ class RoadmapModule:
 
 def _build_registry() -> dict[str, LegalModule]:
     from app.modules.popriri.module import PopririModule
+    from app.modules.sechestre.module import SechestreModule
     modules: list[LegalModule] = [
         PopririModule(),
         RoadmapModule(ModuleInfo(
             module_id="autoritati", name="Cereri autorități",
             description="Solicitări de informații și blocări de la Poliție, Parchet, DNA, ANAF-antifraudă.",
             status=ModuleStatus.ROADMAP, handled_doc_types=[DocType.CERERE_AUTORITATE])),
-        RoadmapModule(ModuleInfo(
-            module_id="sechestre", name="Sechestre asigurătorii",
-            description="Sechestre dispuse în procese civile și penale.",
-            status=ModuleStatus.ROADMAP)),
+        SechestreModule(),
         RoadmapModule(ModuleInfo(
             module_id="insolventa", name="Insolvență și succesiuni",
             description="Notificări de deschidere a procedurii de insolvență, certificate de moștenitor.",

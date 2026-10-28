@@ -6,9 +6,11 @@ import { AgentPipeline } from "./components/AgentPipeline";
 import { AppShell } from "./components/AppShell";
 import { CaseFacts, CaseFigures, CaseHeader } from "./components/CaseHeader";
 import { CaseInbox } from "./components/CaseInbox";
+import { SechestreInbox } from "./components/SechestreInbox";
 import type { Case } from "./types/contracts";
 
 export default function App() {
+  const [activeModule, setActiveModule] = useState<string>("popriri");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [animate, setAnimate] = useState(false);
   const [replayDone, setReplayDone] = useState(false);
@@ -36,9 +38,13 @@ export default function App() {
   }, [selectedId]);
 
   return (
-    <AppShell onHome={home}>
+    <AppShell onHome={home} activeModule={activeModule} onSelectModule={setActiveModule}>
       {!selectedId ? (
-        <CaseInbox onOpen={open} />
+        activeModule === "sechestre" ? (
+          <SechestreInbox onOpen={open} />
+        ) : (
+          <CaseInbox onOpen={open} />
+        )
       ) : (
         <>
           {current && <CaseHeader data={current} pending={!replayDone} onBack={home} />}
