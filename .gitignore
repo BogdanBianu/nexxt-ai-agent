@@ -7,3 +7,5 @@ node_modules/
 dist/
 .pytest_cache/
 data/output/*.pdf
+data/output/*.txt
+data/uploads/

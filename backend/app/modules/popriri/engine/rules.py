@@ -28,6 +28,7 @@ class RuleBook:
     cumulative_cap: Decimal
     periodic_categories: set[IncomeCategory]
     rules: dict[str, Rule]
+    creditor_priority: list[CreditorType] = field(default_factory=lambda: list(CreditorType))
 
     def rule(self, rule_id: str) -> Rule:
         return self.rules[rule_id]
@@ -41,6 +42,34 @@ class RuleBook:
 
     def quota(self, rule: Rule, creditor: CreditorType) -> Decimal:
         return rule.quota_if_creditor.get(creditor, rule.quota or Decimal(0))
+
+    def priority_rank(self, creditor: CreditorType) -> int:
+        """0 = cel mai prioritar (R-PRIO-09). Tipurile nelistate vin la final."""
+        try:
+            return self.creditor_priority.index(creditor)
+        except ValueError:
+            return len(self.creditor_priority)
+
+    def as_dict(self) -> dict:
+        """Registrul serializabil pentru `GET /api/rules` (afișat în frontend)."""
+        return {
+            "version": self.version,
+            "parameters": {
+                "salariu_minim_net": float(self.salariu_minim_net),
+                "cumulative_cap_on_periodic_income": float(self.cumulative_cap),
+                "creditor_priority": [c.value for c in self.creditor_priority],
+            },
+            "periodic_categories": sorted(c.value for c in self.periodic_categories),
+            "rules": [{
+                "id": r.id,
+                "legal_source": r.legal_source,
+                "description": r.description,
+                "categories": [c.value for c in r.categories],
+                "creditor_types": [c.value for c in r.creditor_types],
+                "quota": float(r.quota) if r.quota is not None else None,
+                "quota_if_creditor": {k.value: float(v) for k, v in r.quota_if_creditor.items()},
+            } for r in self.rules.values()],
+        }
 
 
 @lru_cache
@@ -62,4 +91,5 @@ def load_rulebook(path: str | None = None) -> RuleBook:
         cumulative_cap=Decimal(str(params.get("cumulative_cap_on_periodic_income", "0.5"))),
         periodic_categories={IncomeCategory(c) for c in raw.get("periodic_categories", [])},
         rules=rules,
+        creditor_priority=[CreditorType(c) for c in params.get("creditor_priority", [c.value for c in CreditorType])],
     )

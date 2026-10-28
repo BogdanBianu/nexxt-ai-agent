@@ -8,6 +8,8 @@ parameters:
   salariu_minim_net: 2574
   # Plafonul cumulat din venitul periodic când există mai multe popriri
   cumulative_cap_on_periodic_income: 0.5
+  # Ordinea de preferință între creditori la popriri concurente (R-PRIO-09), de la cel mai prioritar
+  creditor_priority: [INTRETINERE, FISCAL, COMERCIAL]
 
 periodic_categories: [SALARIU, PENSIE]
 
@@ -57,3 +59,11 @@ rules:
   - id: R-CAP-08
     legal_source: "CPC art. 781"
     description: "Suma indisponibilizată nu depășește totalul datorat din adresa de poprire."
+
+  - id: R-PRIO-09
+    legal_source: "CPC art. 867 (ordinea de preferință a creanțelor)"
+    description: "La popriri concurente, suma disponibilă se distribuie în ordinea: întreținere > fiscal > comercial; la rang egal, în ordinea înregistrării."
+
+  - id: R-DUP-10
+    legal_source: "Procedură internă (evitarea dublei indisponibilizări pe același titlu)"
+    description: "Același dosar de executare nu se înregistrează de două ori; a doua adresă ridică excepția E02."
