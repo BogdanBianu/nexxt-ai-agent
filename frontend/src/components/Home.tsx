@@ -7,6 +7,7 @@ import type { Case, CaseSummary, ModuleInfo } from "../types/contracts";
 import { moduleOf, statusLabel, typeLabel } from "../lib/modules";
 import { caseTitle, EXCEPTION_LABEL, formatAgo, formatTime, STATUS_STYLE, type StatusTone } from "../lib/ui";
 import { BatchUpload } from "./BatchUpload";
+import { Mascot } from "./Mascot";
 import { ServerDown } from "./ServerDown";
 
 interface Props {
@@ -84,7 +85,6 @@ export function Home({ onOpen }: Props) {
     .filter((c) => !q || haystack(c, details[c.case_id]).includes(q));
   const problems = cases.filter(isProblem).length;
 
-  const today = new Date().toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "long" });
 
   return (
     <div className="pt-10">
@@ -93,12 +93,8 @@ export function Home({ onOpen }: Props) {
           <span className="block">Lasă-ne documentele.</span>
           <span className="block">Agenții noștri se ocupă de ele.</span>
         </h1>
-        <div className="max-w-[44ch] pb-1.5 text-[15px] text-muted">
-          <p className="font-semibold text-ink first-letter:uppercase">{today}</p>
-          <p className="mt-1">
-            Popriri, sechestre, cereri de la autorități sau insolvențe: fiecare ajunge singur la modulul potrivit. Tu decizi doar unde agenții se
-            opresc.
-          </p>
+        <div className="hidden w-[30rem] shrink-0 sm:block">
+          <Mascot inline />
         </div>
       </div>
 

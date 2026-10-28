@@ -1,4 +1,5 @@
-// Lex, mascota LexOps: un pătrat galben cu ochelari, în colțul din dreapta jos. Sare din când în când
+// Lex, mascota LexOps: un pătrat galben cu ochelari; pe pagina de start stă lângă titlu, în rest în colțul
+// din dreapta jos. Sare din când în când
 // și spune câte o replică; restul aplicației îi poate da replici prin say() din lib/mascot. Proprietar: Om4.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
@@ -22,9 +23,12 @@ const HOP_MS = 620;
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
-function Face({ talking }: { talking: boolean }) {
+// Salutul o singură dată pe sesiune, nu la fiecare întoarcere pe pagina de start
+let greeted = false;
+
+function Face({ talking, large }: { talking: boolean; large: boolean }) {
   return (
-    <svg viewBox="0 0 64 64" className="h-16 w-16 drop-shadow-[0_6px_10px_rgba(0,0,0,0.15)]" aria-hidden>
+    <svg viewBox="0 0 64 64" className={`${large ? "h-24 w-24" : "h-16 w-16"} drop-shadow-[0_6px_10px_rgba(0,0,0,0.15)]`} aria-hidden>
       <rect x="4" y="4" width="56" height="56" rx="11" fill="#fff200" stroke="#000" strokeWidth="3" />
       {/* ochelari */}
       <path d="M4 27 h7 M53 27 h7 M29 27 h6" stroke="#000" strokeWidth="3" strokeLinecap="round" />
@@ -43,7 +47,7 @@ function Face({ talking }: { talking: boolean }) {
   );
 }
 
-export function Mascot() {
+export function Mascot({ inline = false }: { inline?: boolean }) {
   const [line, setLine] = useState<string | null>(null);
   const [hopKey, setHopKey] = useState(0);
   const [hopping, setHopping] = useState(false);
@@ -75,7 +79,11 @@ export function Mascot() {
 
   // Salutul la prima apariție
   useEffect(() => {
-    const t = window.setTimeout(() => speak(GREETING), 2500);
+    if (greeted) return;
+    const t = window.setTimeout(() => {
+      greeted = true;
+      speak(GREETING);
+    }, 1500);
     return () => window.clearTimeout(t);
   }, [speak]);
 
@@ -105,12 +113,18 @@ export function Mascot() {
   useEffect(() => () => window.clearTimeout(hideTimer.current), []);
 
   return (
-    <div className="pointer-events-none fixed right-5 bottom-5 z-40 flex items-end gap-3 sm:right-8 sm:bottom-8">
+    <div
+      className={
+        inline
+          ? "relative flex h-32 items-end justify-end gap-4"
+          : "pointer-events-none fixed right-5 bottom-5 z-40 flex items-end gap-3 sm:right-8 sm:bottom-8"
+      }
+    >
       {line && (
         <div
           role="status"
           aria-live="polite"
-          className="pointer-events-auto relative mb-6 max-w-[16rem] origin-bottom-right animate-bubble-in rounded-lg bg-paper py-3 pr-9 pl-4 text-sm leading-snug font-medium shadow-[0_12px_32px_rgba(0,0,0,0.14)] ring-1 ring-ink/10"
+          className={`pointer-events-auto relative origin-bottom-right animate-bubble-in ${inline ? "mb-10 max-w-[19rem]" : "mb-6 max-w-[16rem]"} rounded-lg bg-paper py-3 pr-9 pl-4 text-sm leading-snug font-medium shadow-[0_12px_32px_rgba(0,0,0,0.14)] ring-1 ring-ink/10`}
         >
           {line}
           <button
@@ -132,9 +146,9 @@ export function Mascot() {
           aria-label="Lex, asistentul LexOps: apasă pentru o replică"
           className={`origin-bottom cursor-pointer rounded-xl transition-transform duration-150 hover:-translate-y-0.5 active:scale-95 ${hopping ? "animate-hop" : ""}`}
         >
-          <Face talking={!!line} />
+          <Face talking={!!line} large={inline} />
         </button>
-        <span key={`s${hopKey}`} className={`mt-1 h-1.5 w-11 rounded-full bg-ink/15 ${hopping ? "animate-hop-shadow" : ""}`} aria-hidden />
+        <span key={`s${hopKey}`} className={`mt-1 h-1.5 rounded-full bg-ink/15 ${inline ? "w-16" : "w-11"} ${hopping ? "animate-hop-shadow" : ""}`} aria-hidden />
       </div>
     </div>
   );

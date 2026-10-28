@@ -188,7 +188,8 @@ export function AppShell({ current, onHome, onModule, children }: Props) {
       </header>
 
       <main className="mx-auto max-w-[1440px] px-6 pb-16 lg:px-10">{children}</main>
-      <Mascot />
+      {/* Pe pagina de start Lex stă în hero, lângă titlu */}
+      {current !== null && <Mascot />}
     </div>
   );
 }
