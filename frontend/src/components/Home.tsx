@@ -140,11 +140,11 @@ export function Home({ onModule, onOpen }: Props) {
             <h2 id="modules-title" className="sr-only">
               Module
             </h2>
-            <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {active.map((m) => (
                 <ModuleCard key={m.module_id} m={m} cases={cases.filter((c) => moduleOf(c) === m.module_id)} onOpen={() => onModule(m.module_id)} />
               ))}
-              {!loaded && [0, 1, 2].map((i) => <li key={i} className="h-[200px] rounded-lg bg-canvas" aria-hidden />)}
+              {!loaded && [0, 1, 2, 3].map((i) => <li key={i} className="h-[200px] rounded-lg bg-canvas" aria-hidden />)}
             </ul>
 
             {planned.length > 0 && (
