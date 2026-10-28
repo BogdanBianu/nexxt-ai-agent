@@ -9,3 +9,4 @@ dist/
 data/output/*.pdf
 data/output/*.txt
 data/uploads/
+data/pdfs_scanned/
