@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 
 from app import config
 from app.contracts import (
-    AuditEntry, BankSnapshot, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
+    AgentName, AgentStatus, AuditEntry, BankSnapshot, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
     IncomingDocument, ModuleInfo, PlatformMetrics, ReviewAction, RuleBookInfo, Scenario, ScenarioInfo,
 )
 from app.core.events import EventSink, now
@@ -295,6 +295,7 @@ def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = 
     if mod is None or mod.info.status.value == "ROADMAP":
         case.module_id = mod.info.module_id if mod else "necunoscut"
         case.status = CaseStatus.ROUTED_TO_OTHER_MODULE
+        _emit_routed(sink, mod)
     else:
         case.module_id = mod.info.module_id
         try:
@@ -311,6 +312,17 @@ def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = 
     EVENTS[case.case_id] = [e.model_dump(mode="json") for e in sink.events]
     AUDIT_LOG.setdefault(case.case_id, []).extend(_audit_entries(case, sink))
     return case
+
+
+def _emit_routed(sink: EventSink, mod) -> None:
+    """Documentul nu e o poprire: spunem unde a plecat și marcăm agenții PopririZero ca neaplicabili,
+    ca UI-ul să nu-i arate „în așteptare” la nesfârșit (ex. S8, cerere de la Poliție)."""
+    target = f"modulul „{mod.info.name}” (în roadmap)" if mod else "un ofițer (tip de document necunoscut)"
+    sink.emit(AgentName.INTAKE_ROUTER, AgentStatus.COMPLETED, f"Document redirecționat către {target}",
+              {"module_id": mod.info.module_id if mod else None})
+    for agent in AgentName:
+        if agent != AgentName.INTAKE_ROUTER:
+            sink.emit(agent, AgentStatus.SKIPPED, "Nu se aplică: documentul nu este o poprire", {})
 
 
 def _audit_entries(case: Case, sink: EventSink) -> list[AuditEntry]:

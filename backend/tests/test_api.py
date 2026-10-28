@@ -66,3 +66,15 @@ def test_sistare_keeps_router_doc_type_through_langgraph():
     assert case["order"]["doc_type"] == "POPRIRE_SISTARE"
     assert case["status"] == "LIFTED"
     assert case["exceptions"] == []
+
+
+def test_routed_document_marks_popriri_agents_skipped():
+    """S8 (Poliție): router-ul redirecționează, iar agenții PopririZero apar „Oprit”, nu „în așteptare”."""
+    case = client.post("/api/cases/from-scenario", json={"scenario_id": "S8"}).json()
+    assert case["status"] == "ROUTED_TO_OTHER_MODULE"
+    last = {}
+    for ev in client.get(f"/api/cases/{case['case_id']}/events").json():
+        last[ev["agent"]] = ev
+    assert "redirecționat" in last["INTAKE_ROUTER"]["message"]
+    assert all(last[a]["status"] == "SKIPPED" for a in
+               ["EXTRACTION", "RECONCILIATION", "INCOME_CLASSIFIER", "RULE_ENGINE", "ANOMALY", "OUTCOME"])
