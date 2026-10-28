@@ -6,7 +6,7 @@
 Dacă LangGraph nu e instalat, rulează un executor secvențial cu ACEEAȘI logică de rutare
 (util pentru teste rapide și ca plasă de siguranță la demo).
 """
-from app.contracts import DocType
+from app.contracts import AgentName, AgentStatus, DocType
 from .agents import anomaly, extraction, income_classifier, outcome, reconciliation, rule_engine
 from .agents.context import AgentContext
 from .state import PopririState, merge
@@ -29,12 +29,30 @@ def route_after_reconciliation(state: dict) -> str:
     return "income_classifier"
 
 
+def _emit_skipped_middle_agents(state: dict, ctx: AgentContext) -> None:
+    """Când graful sare direct de la RECONCILIATION la OUTCOME (ex. sistare sau CNP invalid),
+    notificăm UI-ul lui Om4 că nodurile intermediare au fost sărite intenționat."""
+    reason = ("Adresă de sistare poprire — nu necesită calcul de reținere"
+              if state["order"].doc_type == DocType.POPRIRE_SISTARE
+              else "Excepție blocantă de reconciliere/identitate — oprire timpurie")
+    for agent_name in (AgentName.INCOME_CLASSIFIER, AgentName.RULE_ENGINE, AgentName.ANOMALY):
+        ctx.emit(agent_name, AgentStatus.SKIPPED, reason, {"skipped": True})
+
+
 def build_langgraph(ctx: AgentContext):
     from langgraph.graph import END, START, StateGraph
 
+    def outcome_with_skip_events(s: dict) -> dict:
+        if route_after_reconciliation(s) == "outcome":
+            _emit_skipped_middle_agents(s, ctx)
+        return outcome.run(s, ctx)
+
     g = StateGraph(PopririState)
     for name, fn in NODES.items():
-        g.add_node(name, lambda s, _fn=fn: _fn(s, ctx))
+        if name == "outcome":
+            g.add_node(name, outcome_with_skip_events)
+        else:
+            g.add_node(name, lambda s, _fn=fn: _fn(s, ctx))
     g.add_edge(START, "extraction")
     g.add_edge("extraction", "reconciliation")
     g.add_conditional_edges("reconciliation", route_after_reconciliation,
@@ -52,6 +70,8 @@ def run_sequential(state: dict, ctx: AgentContext) -> dict:
     if route_after_reconciliation(state) == "income_classifier":
         for name in ("income_classifier", "rule_engine", "anomaly"):
             state = merge(state, NODES[name](state, ctx))
+    else:
+        _emit_skipped_middle_agents(state, ctx)
     return merge(state, NODES["outcome"](state, ctx))
 
 

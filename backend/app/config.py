@@ -13,9 +13,17 @@ DATA_DIR = ROOT_DIR / "data"
 SCENARIOS_DIR = DATA_DIR / "scenarios"
 OUTPUT_DIR = DATA_DIR / "output"
 
+# Credențiale AWS Bedrock
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "us-west-2")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN", "")
+
+# Fallback opțional OpenAI-compatible (dacă este setat)
 FEATHERLESS_API_KEY = os.getenv("FEATHERLESS_API_KEY", "")
 FEATHERLESS_BASE_URL = os.getenv("FEATHERLESS_BASE_URL", "https://api.featherless.ai/v1")
-LLM_MODEL = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-72B-Instruct")
+
+LLM_MODEL = os.getenv("LLM_MODEL", "us.amazon.nova-pro-v1:0")
 LLM_TIMEOUT_S = float(os.getenv("LLM_TIMEOUT_S", "40"))
 
 # "auto" = folosește LLM dacă există cheie; "off" = doar reguli deterministe (demo offline)
@@ -35,4 +43,4 @@ RULES_FILE = os.getenv("RULES_FILE", str(ROOT_DIR / "backend/app/modules/popriri
 def llm_enabled() -> bool:
     if USE_LLM == "off":
         return False
-    return bool(FEATHERLESS_API_KEY)
+    return bool(AWS_ACCESS_KEY_ID or FEATHERLESS_API_KEY)
