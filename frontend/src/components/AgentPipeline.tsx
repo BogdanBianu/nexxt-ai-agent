@@ -64,9 +64,11 @@ interface Props {
   // Dosarul complet: excepțiile marchează pașii cu probleme, restul alimentează panoul de detalii
   data: Case | null;
   onReplayDone?: () => void;
+  // Incrementat după o decizie HITL ca evenimentele noi să fie reîncărcate și redate
+  runKey?: number;
 }
 
-export function AgentPipeline({ caseId, animate, data, onReplayDone }: Props) {
+export function AgentPipeline({ caseId, animate, data, onReplayDone, runKey = 0 }: Props) {
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [shown, setShown] = useState(0);
   const [doneFlag, setDoneFlag] = useState(false);
@@ -111,7 +113,7 @@ export function AgentPipeline({ caseId, animate, data, onReplayDone }: Props) {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [caseId, animate]);
+  }, [caseId, animate, runKey]);
 
   const byAgent = useMemo(() => {
     const m = new Map<AgentName, AgentEvent[]>();

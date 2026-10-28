@@ -32,9 +32,24 @@
     outline: 2px solid var(--color-ink);
     outline-offset: 2px;
   }
+  /* Bare de scroll galbene, pe toată aplicația */
   * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-line-strong) transparent;
+    scrollbar-color: var(--color-sun) var(--color-canvas);
+  }
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-canvas);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-sun);
+    border: 2px solid var(--color-canvas);
+    border-radius: 6px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #e6d900;
   }
 }
 

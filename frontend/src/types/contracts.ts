@@ -226,6 +226,15 @@ export interface Case {
   exceptions: ExceptionFlag[];
   outcome?: CaseOutcome | null;
   reviews: ReviewAction[];
+  audit: AuditEntry[];
+}
+
+// GET /api/cases/{id}/audit — oglinda AuditEntry din backend/app/contracts
+export interface AuditEntry {
+  timestamp: string;
+  actor: string; // numele agentului sau "user:<nume>"
+  action: string;
+  details: Record<string, unknown>;
 }
 
 export interface CaseSummary {

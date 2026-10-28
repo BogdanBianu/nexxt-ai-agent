@@ -1,6 +1,6 @@
 // Antetul dosarului deschis: titlu + alertă, cifrele cheie și fișa dosarului. Proprietar: Om4.
 import type { ReactNode } from "react";
-import { ArrowLeft, OctagonAlert } from "lucide-react";
+import { ArrowDown, ArrowLeft, CircleCheck, OctagonAlert } from "lucide-react";
 import type { Case, CreditorType } from "../types/contracts";
 import { formatDate, formatRon } from "../lib/ui";
 import { StatusChip } from "./StatusChip";
@@ -16,9 +16,11 @@ interface Props {
   // true cât timp agenții încă rulează: statusul, alerta și sumele nu se arată încă
   pending: boolean;
   onBack: () => void;
+  // Mesaj de confirmare după o decizie a ofițerului
+  notice?: string | null;
 }
 
-export function CaseHeader({ data, pending, onBack }: Props) {
+export function CaseHeader({ data, pending, onBack, notice }: Props) {
   const open = pending ? [] : data.exceptions.filter((e) => !e.resolved);
 
   return (
@@ -32,6 +34,13 @@ export function CaseHeader({ data, pending, onBack }: Props) {
         <h1 className="display text-[2rem]">{data.order?.debtor_name ?? data.customer?.full_name ?? "Debitor neidentificat"}</h1>
         {!pending && <StatusChip status={data.status} />}
       </div>
+
+      {notice && !pending && (
+        <div role="status" className="mt-5 flex items-center gap-3 rounded-md border border-ink/20 bg-sun-soft px-5 py-3.5 text-sm">
+          <CircleCheck size={18} className="shrink-0" aria-hidden />
+          <span className="font-semibold">{notice}</span>
+        </div>
+      )}
 
       {open.length > 0 && (
         <div role="alert" className="mt-5 flex gap-3.5 rounded-md border border-danger/40 bg-danger-soft px-5 py-4">
@@ -47,6 +56,17 @@ export function CaseHeader({ data, pending, onBack }: Props) {
             </ul>
             <p className="mt-2 text-sm font-semibold text-danger-ink">Nu s-a blocat nicio sumă. Un ofițer trebuie să verifice dosarul.</p>
           </div>
+          <a
+            href="#workbench"
+            onClick={(ev) => {
+              ev.preventDefault();
+              document.getElementById("workbench")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="ml-auto inline-flex h-10 shrink-0 items-center gap-2 self-center rounded-md bg-danger px-4 text-sm font-semibold text-paper transition-[background-color,transform] duration-150 ease-out hover:bg-danger-ink active:scale-[0.97]"
+          >
+            Verifică acum
+            <ArrowDown size={16} aria-hidden />
+          </a>
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, CircleCheck, ChevronDown, OctagonAlert, Plus, Search, X } from "lucide-react";
 import { api } from "../api/client";
 import type { Case, CaseSummary, ScenarioInfo } from "../types/contracts";
+import { UploadDocument } from "./UploadDocument";
 import { dayLabel, DOC_LABEL, EXCEPTION_LABEL, formatAgo, formatRon, formatTime, STATUS_STYLE, type StatusTone } from "../lib/ui";
 
 interface Props {
@@ -204,7 +205,10 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
           <p className="text-sm text-muted first-letter:uppercase">{today}</p>
           <h1 className="display mt-1 text-4xl">Popriri</h1>
         </div>
-        <ScenarioMenu onPick={simulate} busy={busy} />
+        <div className="flex items-center gap-2">
+          <UploadDocument onUploaded={(id) => onOpen(id, true)} />
+          <ScenarioMenu onPick={simulate} busy={busy} />
+        </div>
       </div>
 
       {error && (
