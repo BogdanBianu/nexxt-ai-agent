@@ -36,6 +36,17 @@ def test_upload_txt_runs_pipeline_and_feeds_metrics():
     assert "RAIFFEISEN" in pdf.content.decode("utf-8", errors="ignore") or pdf.content[:5] == b"%PDF-"
 
 
+def test_upload_auto_detects_customer_bank_without_scenario_pairing():
+    """La upload fără scenario_id (sau cu AUTO), backend-ul găsește singur persoana în memorie (ex. S4 DUMITRU ALEXANDRU)."""
+    text_s4 = main.load_scenario("S4").document.text
+    res = client.post("/api/cases/upload", files={"file": ("document_email.txt", text_s4.encode("utf-8"), "text/plain")})
+    assert res.status_code == 200, res.text
+    case = res.json()
+    assert case["scenario_id"] == "S4"
+    assert case["customer"]["full_name"] == "DUMITRU ALEXANDRU"
+    assert case["status"] == "EXCEPTION_FLAGGED"
+
+
 def test_upload_rejects_unsupported_files():
     res = client.post("/api/cases/upload", files={"file": ("poza.png", b"\x89PNG....", "image/png")})
     assert res.status_code == 415
@@ -69,9 +80,9 @@ def test_sistare_keeps_router_doc_type_through_langgraph():
 
 
 def test_routed_document_marks_popriri_agents_skipped():
-    """Un document pentru un modul din roadmap (ex. insolvență/necunoscut): router-ul redirecționează, iar agenții apar SKIPPED."""
-    text = "TRIBUNALUL BUCUREȘTI — SECȚIA A VII-A CIVILĂ\nNotificare deschidere procedură generală de insolvență conform Legii 85/2014."
-    case = client.post("/api/cases/upload", files={"file": ("notificare_insolventa.txt", text.encode("utf-8"), "text/plain")},
+    """Un document de tip necunoscut: router-ul îl redirecționează către un ofițer, iar agenții apar SKIPPED."""
+    text = "Către Raiffeisen Bank\nInvitație la conferința anuală a asociației băncilor din 12.11.2026."
+    case = client.post("/api/cases/upload", files={"file": ("invitatie.txt", text.encode("utf-8"), "text/plain")},
                        data={"scenario_id": "S1"}).json()
     assert case["status"] == "ROUTED_TO_OTHER_MODULE"
     last = {}

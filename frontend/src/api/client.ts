@@ -9,7 +9,7 @@ import type {
   ScenarioInfo,
 } from "../types/contracts";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -39,6 +39,10 @@ export const api = {
     json<Case>(`/api/cases/${caseId}/review`, {
       method: "POST",
       body: JSON.stringify(review),
+    }),
+  resetCases: () =>
+    json<{ status: string }>("/api/cases/reset", {
+      method: "POST",
     }),
 };
 

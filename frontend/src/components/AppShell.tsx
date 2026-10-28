@@ -1,5 +1,5 @@
 // Layout + bara galbenă de module LexOps. Proprietar: Om4.
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { CircleAlert } from "lucide-react";
 import { api } from "../api/client";
 import type { ModuleInfo } from "../types/contracts";
@@ -13,9 +13,24 @@ export function AppShell({ onHome, children }: Props) {
   const [modules, setModules] = useState<ModuleInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    api.listModules().then(setModules).catch((e: Error) => setError(e.message));
+  const load = useCallback(() => {
+    api
+      .listModules()
+      .then((m) => {
+        setModules(m);
+        setError(null);
+      })
+      .catch((e: Error) => setError(e.message));
   }, []);
+
+  useEffect(load, [load]);
+
+  // Cât timp serverul nu răspunde, verificăm periodic ca indicatorul să dispară singur
+  useEffect(() => {
+    if (!error) return;
+    const id = setInterval(load, 5000);
+    return () => clearInterval(id);
+  }, [error, load]);
 
   return (
     <div className="min-h-screen">

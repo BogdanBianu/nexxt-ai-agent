@@ -235,3 +235,56 @@ def test_gdpr_invalid_cnp_raises_e01():
 
     assert result.status == CaseStatus.EXCEPTION_FLAGGED
     assert any(e.code == ExceptionCode.E01_IDENTITATE for e in result.exceptions)
+
+
+# ---------- reparații după revizuire (Om2): nu trebuie să revină ----------
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from app import main as app_main  # noqa: E402
+
+api = TestClient(app_main.app)
+
+
+def _upload(text: str, scenario_id: str) -> dict:
+    return api.post("/api/cases/upload", files={"file": ("cerere.txt", text.encode("utf-8"), "text/plain")},
+                    data={"scenario_id": scenario_id}).json()
+
+
+def test_access_request_without_signature_does_not_disclose_bank_data():
+    """Oricine știe numele și CNP-ul cuiva ar primi IBAN-urile și soldurile lui (Art. 12 alin. 6 GDPR)."""
+    text = app_main.load_scenario("S25").document.text.replace("Semnătură olografă: Popescu Ion (L.S.)", "")
+    case = _upload(text, "S25")
+    assert case["status"] == "EXCEPTION_FLAGGED"
+    assert any(e["code"] == "E05" and e["severity"] == "BLOCKING" for e in case["exceptions"])
+    assert case["outcome"]["response_letter_text"] is None
+
+
+def test_gdpr_footer_on_garnishment_does_not_hijack_routing():
+    text = app_main.load_scenario("S1").document.text + \
+        "\nDatele sunt prelucrate conform Regulamentului (UE) 2016/679 (GDPR) și pot fi sesizate la ANSPDCP."
+    case = _upload(text, "S1")
+    assert case["module_id"] == "popriri" and case["doc_type"] == "POPRIRE_INFIINTARE"
+
+
+def test_registration_number_is_read_correctly():
+    case = api.post("/api/cases/from-scenario", json={"scenario_id": "S26"}).json()
+    assert case["order"]["case_number"] == "GDPR-2026-789"
+
+
+def test_client_mentioning_anspdcp_stays_a_client_request():
+    text = app_main.load_scenario("S25").document.text.replace(
+        "titular de cont bancar", "titular de cont bancar (știu că pot sesiza ANSPDCP)")
+    case = _upload(text, "S25")
+    assert case["order"]["issuer_type"] == "PERSOANA_FIZICA" and case["status"] == "AUTO_PROCESSED"
+    assert "DREPTUL DE ACCES" in case["outcome"]["response_letter_text"]
+
+
+def test_request_from_anspdcp_letterhead_is_recognized():
+    text = ("AUTORITATEA NAȚIONALĂ DE SUPRAVEGHERE A PRELUCRĂRII DATELOR CU CARACTER PERSONAL\n"
+            "Nr. adresă: 8812/2026\nData: 27.10.2026\nCătre: RAIFFEISEN BANK S.A.\n"
+            "Solicităm evidențele prelucrării datelor pentru persoana vizată:\n"
+            "Persoana vizată: POPESCU ION, CNP: 1850615400011\nSemnătură electronică calificată")
+    case = _upload(text, "S25")
+    assert case["module_id"] == "gdpr" and case["order"]["issuer_type"] == "ANSPDCP"
+    assert case["order"]["case_number"] == "8812/2026"

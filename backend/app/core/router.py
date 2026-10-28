@@ -10,23 +10,35 @@ from app.core.validators import normalize_text
 
 _KEYWORDS: list[tuple[DocType, list[str]]] = [
     # Ordinea contează: cele mai specifice primele
-    (DocType.CERERE_GDPR, [
-        "REGULAMENTUL (UE) 2016/679", "REGULAMENTULUI (UE) 2016/679", "REGULAMENTUL 679/2016",
-        "REGULAMENTUL GENERAL PRIVIND PROTECTIA DATELOR", "DREPTUL DE ACCES", "DREPTUL LA ACCES",
-        "DREPTUL LA STERGERE", "DREPTUL DE A FI UITAT", "STERGEREA DATELOR", "DREPTUL LA OPOZITIE",
-        "DREPTUL LA PORTABILITATE", "ART. 15 DIN REGULAMENT", "ART. 17 DIN REGULAMENT",
-        "ART. 21 DIN REGULAMENT", "ANSPDCP", "AUTORITATEA NATIONALA DE SUPRAVEGHERE A PRELUCRARII DATELOR",
-        "PROTECTIA DATELOR CU CARACTER PERSONAL", "GDPR",
+    (DocType.CERTIFICAT_MOSTENITOR, [
+        "CERTIFICAT DE MOSTENITOR", "CERTIFICATUL DE MOSTENITOR", "CERTIFICAT DE CALITATE DE MOSTENITOR",
     ]),
-    (DocType.CERERE_AUTORITATE, [
-        "INSPECTORATUL DE POLITIE", "INSPECTORATUL GENERAL AL POLITIEI", "PARCHETUL",
-        "DIRECTIA NATIONALA ANTICORUPTIE", "DIICOT", "DOSAR PENAL", "URMARIRE PENALA",
-        "ORDONANTA PROCURORULUI", "CRIMINALITATII ECONOMICE",
+    (DocType.NOTIFICARE_INSOLVENTA, [
+        "DESCHIDEREA PROCEDURII INSOLVENTEI", "DESCHIDERE A PROCEDURII INSOLVENTEI",
+        "DESCHIDEREA PROCEDURII GENERALE A INSOLVENTEI", "DESCHIDEREA PROCEDURII SIMPLIFICATE",
+        "DESCHIDEREA FALIMENTULUI", "LEGEA NR. 85/2014", "LEGII NR. 85/2014", "LEGEA 85/2014", "LEGII 85/2014",
+    ]),
+    # sechestrele înaintea popririlor: o ridicare de sechestru vorbește și de „sechestru asigurător”
+    (DocType.SECHESTRU_RIDICARE, [
+        "RIDICARE A MASURILOR ASIGURATORII", "RIDICAREA MASURILOR ASIGURATORII",
+        "RIDICAREA SECHESTRULUI ASIGURATOR", "RIDICARE A MASURII ASIGURATORII", "RIDICAREA MASURII ASIGURATORII",
+    ]),
+    (DocType.SECHESTRU_INSTITUIRE, [
+        "DECIZIE DE INSTITUIRE A MASURILOR ASIGURATORII",
+        "ORDONANTA DE INSTITUIRE A MASURII ASIGURATORII",
+        "INSTITUIREA MASURII ASIGURATORII A SECHESTRULUI",
+        "INSTITUIRE A SECHESTRULUI ASIGURATOR",
+        "SECHESTRU ASIGURATOR", "SECHESTRULUI ASIGURATOR", "MASURILOR ASIGURATORII", "MASURI ASIGURATORII",
     ]),
     (DocType.POPRIRE_SISTARE, [
         "SISTARE A POPRIRII", "SISTAREA POPRIRII", "RIDICARE A POPRIRII",
         "RIDICAREA POPRIRII", "INCETARE A POPRIRII", "INCETAREA POPRIRII",
         "DESFIINTAREA POPRIRII",
+    ]),
+    (DocType.CERERE_AUTORITATE, [
+        "INSPECTORATUL DE POLITIE", "INSPECTORATUL GENERAL AL POLITIEI", "PARCHETUL",
+        "DIRECTIA NATIONALA ANTICORUPTIE", "DIICOT", "DOSAR PENAL", "URMARIRE PENALA",
+        "ORDONANTA PROCURORULUI", "CRIMINALITATII ECONOMICE",
     ]),
     (DocType.POPRIRE_MODIFICARE, [
         "MODIFICARE A POPRIRII", "MODIFICAREA CUANTUMULUI", "DIMINUAREA POPRIRII",
@@ -39,7 +51,25 @@ _KEYWORDS: list[tuple[DocType, list[str]]] = [
     (DocType.CERERE_INFORMATII, [
         "SOLICITARE DE INFORMATII", "CERERE DE INFORMATII", "COMUNICARE RULAJ CONT",
     ]),
+    # GDPR ultimul: multe adrese oficiale au în subsol „date prelucrate conform Regulamentului (UE) 2016/679”,
+    # deci recunoaștem doar formulările unei cereri, nu simpla mențiune a regulamentului
+    (DocType.CERERE_GDPR, [
+        "DREPTUL DE ACCES", "DREPTULUI DE ACCES", "DREPTUL LA ACCES", "DREPTUL LA STERGERE", "DREPTUL DE A FI UITAT",
+        "DREPTUL LA OPOZITIE", "DREPTUL DE OPOZITIE", "DREPTUL LA PORTABILITATE", "STERGEREA DATELOR", "STERGERE A DATELOR",
+        "ART. 15 GDPR", "ART. 17 GDPR", "ART. 20 GDPR", "ART. 21 GDPR",
+        "ART. 15 DIN REGULAMENT", "ART. 17 DIN REGULAMENT", "ART. 21 DIN REGULAMENT",
+        "CERERE GDPR", "SOLICITARE GDPR", "AUTORITATEA NATIONALA DE SUPRAVEGHERE A PRELUCRARII DATELOR",
+    ]),
 ]
+
+_TARGET_MODULE = {
+    DocType.CERERE_AUTORITATE: "autoritati (Cereri autorități)",
+    DocType.SECHESTRU_INSTITUIRE: "sechestre (Sechestre asigurătorii)",
+    DocType.SECHESTRU_RIDICARE: "sechestre (Sechestre asigurătorii)",
+    DocType.NOTIFICARE_INSOLVENTA: "insolventa (Insolvență și succesiuni)",
+    DocType.CERTIFICAT_MOSTENITOR: "insolventa (Insolvență și succesiuni)",
+    DocType.CERERE_GDPR: "gdpr (Cereri GDPR)",
+}
 
 _SYSTEM = """Ești ofițerul de triaj (Intake Router) din departamentul Operațiuni Juridice al Raiffeisen Bank România.
 Clasifici documentul primit într-una din categoriile:
@@ -48,7 +78,11 @@ Clasifici documentul primit într-una din categoriile:
 - POPRIRE_MODIFICARE: adresă de modificare a cuantumului sumei poprite.
 - CERERE_INFORMATII: solicitare de informații de la executor fără indisponibilizare de sume.
 - CERERE_AUTORITATE: solicitare de la Poliție (IGPR/IPJ), Parchet, DNA, DIICOT într-un dosar penal (se rutează către modulul Cereri Autorități).
-- CERERE_GDPR: cerere privind protecția datelor (Regulamentul UE 2016/679 - drept de acces Art. 15, ștergere Art. 17, opoziție marketing Art. 21 sau solicitare ANSPDCP).
+- SECHESTRU_INSTITUIRE: decizie / încheiere / ordonanță de instituire a sechestrului asigurător (fiscal Art. 213 CPF, civil Art. 952 CPC, penal Art. 249 CPP).
+- SECHESTRU_RIDICARE: decizie / încheiere de ridicare a măsurii asigurătorii (a sechestrului).
+- NOTIFICARE_INSOLVENTA: notificare de la tribunal / administrator / lichidator judiciar despre deschiderea procedurii insolvenței sau a falimentului (Legea 85/2014).
+- CERTIFICAT_MOSTENITOR: certificat de moștenitor emis de notarul public după decesul unui client (succesiune).
+- CERERE_GDPR: cerere privind protecția datelor (Regulamentul UE 2016/679 - drept de acces Art. 15, ștergere Art. 17, opoziție marketing Art. 21) sau solicitare ANSPDCP. O simplă mențiune a regulamentului în subsolul altui document NU înseamnă cerere GDPR.
 - NECUNOSCUT: documentul nu se încadrează în niciuna din categoriile de mai sus.
 
 Returnează JSON cu formatul:
@@ -66,9 +100,7 @@ def classify_document(doc: IncomingDocument, emit: EmitFn) -> tuple[DocType, flo
         hit = next((k for k in keys if k in text), None)
         if hit:
             reason = f"Expresie cheie identificată în document: „{hit.lower()}”"
-            mod_name = "gdpr (Cereri GDPR)" if doc_type == DocType.CERERE_GDPR else ("popriri (PopririZero)" if doc_type in (DocType.POPRIRE_INFIINTARE, DocType.POPRIRE_SISTARE, DocType.POPRIRE_MODIFICARE, DocType.CERERE_INFORMATII) else "autoritati (Cereri autorități)")
-            target_module = mod_name
-
+            target_module = _TARGET_MODULE.get(doc_type, "popriri (PopririZero)")
             emit(AgentName.INTAKE_ROUTER, AgentStatus.COMPLETED,
                  f"Document clasificat: {doc_type.value} → {target_module}",
                  {"doc_type": doc_type.value, "confidence": 0.96, "method": "KEYWORD",

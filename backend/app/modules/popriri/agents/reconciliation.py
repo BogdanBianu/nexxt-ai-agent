@@ -16,10 +16,12 @@ def run(state: dict, ctx: AgentContext) -> dict:
     emit, order = ctx.emit, state["order"]
     emit(AgentName.RECONCILIATION, AgentStatus.STARTED, "Caut debitorul în Core Banking", {})
     exc: list[ExceptionFlag] = []
+    review = state.get("review")
+    resolved = set(review.resolve_codes) if review else set()   # excepții pe care ofițerul le-a lămurit
 
-    # dacă extragerea a găsit deja un CNP invalid, nu mai căutăm
+    # dacă extragerea a găsit deja un CNP invalid (și ofițerul nu l-a lămurit), nu mai căutăm
     if any(e.code == ExceptionCode.E01_IDENTITATE and e.severity == Severity.BLOCKING
-           for e in state.get("exceptions", [])):
+           and e.code.value not in resolved for e in state.get("exceptions", [])):
         emit(AgentName.RECONCILIATION, AgentStatus.SKIPPED, "CNP invalid: identificarea nu e posibilă", {})
         return {"stop_after_reconciliation": True}
 
@@ -66,7 +68,8 @@ def run(state: dict, ctx: AgentContext) -> dict:
                                      message=f"Se cere sistarea popririi din dosarul {target}, dar nu există "
                                              "o poprire activă înregistrată.", evidence=[str(target)]))
 
-    stop = any(e.code in IDENTITY_CODES and e.severity == Severity.BLOCKING for e in exc)
+    stop = any(e.code in IDENTITY_CODES and e.severity == Severity.BLOCKING and e.code.value not in resolved
+               for e in exc)
     emit(AgentName.RECONCILIATION, AgentStatus.COMPLETED,
          f"Client {customer.full_name}: {len(accounts)} conturi, {len(active)} popriri active",
          {"customer_id": customer.customer_id, "accounts": len(accounts), "active_garnishments": len(active),

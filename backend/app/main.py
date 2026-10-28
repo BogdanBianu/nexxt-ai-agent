@@ -20,12 +20,14 @@ from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from app import config
 from app.contracts import (
     ActiveGarnishment, AgentName, AgentStatus, AuditEntry, BankSnapshot, DocType, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
+    CustomerStatus,
     IncomingDocument, ModuleInfo, PlatformMetrics, ReviewAction, RuleBookInfo, Scenario, ScenarioInfo,
 )
 from app.core.events import EventSink, now
 from app.core.modules import module_for, registry
 from app.core.pdf_text import bytes_to_text
 from app.core.router import classify_document
+from app.core.validators import normalize_text
 from app.modules.popriri.engine.rules import load_rulebook
 
 log = logging.getLogger("lexops")
@@ -49,6 +51,9 @@ AUDIT_LOG: dict[str, list[AuditEntry]] = {}    # istoricul TUTUROR rulărilor (o
 # Popririle înființate în această sesiune: case_id -> (scenariu, CNP/CUI, poprire). Fiecare scenariu e
 # o „bancă” separată; fără registru, aceeași adresă trimisă de două ori s-ar bloca de două ori (R-DUP-10).
 REGISTERED: dict[str, tuple[str | None, str, ActiveGarnishment]] = {}
+# Insolvențele înregistrate în sesiune: case_id -> (scenariu, CUI). Clientul devine INSOLVENTA pentru
+# documentele următoare, iar popririle lui sunt suspendate (Legea 85/2014, art. 75).
+INSOLVENT: dict[str, tuple[str | None, str]] = {}
 
 _SCENARIO_ID = re.compile(r"[A-Za-z0-9_-]{1,40}")
 UPLOADS_DIR = config.DATA_DIR / "uploads"
@@ -63,6 +68,61 @@ def load_scenario(scenario_id: str) -> Scenario:
     if not _SCENARIO_ID.fullmatch(scenario_id) or not path.exists():
         raise HTTPException(status_code=404, detail=f"Scenariul {scenario_id} nu există")
     return Scenario.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def _resolve_scenario_for_upload(text: str, filename: str, fallback_id: str = "S1") -> Scenario:
+    """Identifică automat în memoria băncii (S1..S16) clientul și conturile corespunzătoare adresei încărcate."""
+    norm_text = normalize_text(text)
+    scenarios: list[Scenario] = []
+    if config.SCENARIOS_DIR.exists():
+        for p in sorted(config.SCENARIOS_DIR.glob("*.json"),
+                        key=lambda p: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", p.stem)]):
+            try:
+                scenarios.append(Scenario.model_validate_json(p.read_text(encoding="utf-8")))
+            except Exception:
+                continue
+
+    if norm_text and scenarios:
+        # 1. Potrivire exactă pe textul documentului din scenariu
+        for sc in scenarios:
+            if sc.document.text and normalize_text(sc.document.text) == norm_text:
+                return sc
+
+        # 2. Potrivire după (Nume client + CNP/CUI) în textul adresei
+        for sc in scenarios:
+            for c in sc.bank.customers:
+                if normalize_text(c.full_name) in norm_text and c.national_id in norm_text:
+                    return sc
+
+        # 3. Potrivire după Nume client (diferențiază cazuri cu CNP greșit în adresă, ex. S5, sau S4 vs S1)
+        name_matches = [
+            sc for sc in scenarios
+            if any(normalize_text(c.full_name) and normalize_text(c.full_name) in norm_text for c in sc.bank.customers)
+        ]
+        if len(name_matches) == 1:
+            return name_matches[0]
+        if len(name_matches) > 1:
+            for sc in name_matches:
+                sc_doc_norm = normalize_text(sc.document.text or "")
+                case_m = re.search(r"DOSAR(?:UL)? (?:DE EXECUTARE |PENAL )?NR\.?\s*([0-9A-Z/\-]+)", sc_doc_norm)
+                if case_m and case_m.group(1) in norm_text:
+                    return sc
+                if "1850615400019" in norm_text and "1850615400019" in sc_doc_norm:
+                    return sc
+            return name_matches[0]
+
+        # 4. Potrivire doar după CNP/CUI
+        for sc in scenarios:
+            for c in sc.bank.customers:
+                if c.national_id and c.national_id in norm_text:
+                    return sc
+
+    # 5. Potrivire după numele fișierului (ex. S4.pdf) sau fallback
+    m = re.search(r"(?:^|[^A-Z0-9])(S\d+)(?:[^0-9]|$)", filename.upper())
+    if m and (config.SCENARIOS_DIR / f"{m.group(1)}.json").exists():
+        return load_scenario(m.group(1))
+    target = fallback_id if (fallback_id and fallback_id.upper() != "AUTO") else "S1"
+    return load_scenario(target)
 
 
 @app.get("/", include_in_schema=False)
@@ -148,6 +208,18 @@ def list_cases():
     return out
 
 
+@app.post("/api/cases/reset")
+def reset_cases():
+    """Golește toate dosarele și popririle înregistrate în memorie (pentru re-testare rapidă fără restart)."""
+    CASES.clear()
+    BANKS.clear()
+    EVENTS.clear()
+    PROCESSING_MS.clear()
+    AUDIT_LOG.clear()
+    REGISTERED.clear()
+    return {"status": "ok"}
+
+
 @app.post("/api/cases/from-scenario", response_model=Case)
 def create_case_from_scenario(body: CreateCaseFromScenario):
     """Creează și rulează un dosar dintr-un scenariu sintetic (S1..S8)."""
@@ -168,11 +240,8 @@ def create_case_from_scenario(body: CreateCaseFromScenario):
 
 
 @app.post("/api/cases/upload", response_model=Case)
-async def upload_case_document(file: UploadFile = File(...), scenario_id: str = Form("S1")):
-    """Încarcă un PDF (sau .txt) în timpul demo-ului și îl rulează pe BankSnapshot-ul scenariului `scenario_id`.
-
-    Se trimite ca `multipart/form-data` cu câmpurile `file` și (opțional) `scenario_id`.
-    """
+async def upload_case_document(file: UploadFile = File(...), scenario_id: str = Form("AUTO")):
+    """Încarcă un PDF (sau .txt) în timpul demo-ului și identifică automat în memorie clientul și conturile sale."""
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="Fișierul încărcat este gol")
@@ -183,12 +252,13 @@ async def upload_case_document(file: UploadFile = File(...), scenario_id: str = 
     is_pdf = data[:5] == b"%PDF-"
     if not is_pdf and not filename.lower().endswith(".txt"):
         raise HTTPException(status_code=415, detail="Se acceptă doar fișiere PDF sau .txt")
-    sc = load_scenario(scenario_id)
 
     try:
         text = bytes_to_text(data, "upload.pdf" if is_pdf else filename)
     except Exception as exc:  # PDF corupt / criptat
         raise HTTPException(status_code=422, detail=f"Nu am putut citi textul din fișier: {exc}") from exc
+
+    sc = _resolve_scenario_for_upload(text, filename, scenario_id)
 
     case_id = f"CASE-UP-{uuid.uuid4().hex[:6].upper()}"
     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
@@ -331,7 +401,9 @@ def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = 
 
 
 def _bank_with_registered(case: Case, bank: BankSnapshot) -> BankSnapshot:
-    """Banca scenariului + popririle înființate deja în sesiune pe același client (în afară de dosarul curent)."""
+    """Banca scenariului + ce s-a înregistrat deja în sesiune pe același client (în afară de dosarul curent):
+    popririle înființate și insolvențele (client INSOLVENTA, popriri suspendate)."""
+    bank = _bank_with_insolvencies(case, bank)
     customer_ids = {c.national_id: c.customer_id for c in bank.customers}
     known = {(g.customer_id, g.case_number) for g in bank.active_garnishments}
     extra = []
@@ -346,12 +418,32 @@ def _bank_with_registered(case: Case, bank: BankSnapshot) -> BankSnapshot:
     return bank.model_copy(update={"active_garnishments": bank.active_garnishments + extra})
 
 
+def _bank_with_insolvencies(case: Case, bank: BankSnapshot) -> BankSnapshot:
+    insolvent = {nid for case_id, (sid, nid) in INSOLVENT.items()
+                 if case_id != case.case_id and sid == case.scenario_id}
+    hit = {c.customer_id for c in bank.customers if c.national_id in insolvent}
+    if not hit:
+        return bank
+    return bank.model_copy(update={
+        "customers": [c.model_copy(update={"status": CustomerStatus.INSOLVENTA}) if c.customer_id in hit else c
+                      for c in bank.customers],
+        "active_garnishments": [g.model_copy(update={"active": False}) if g.customer_id in hit else g
+                                for g in bank.active_garnishments],
+    })
+
+
 def _register(case: Case) -> None:
     """Ține minte popririle înființate automat; o sistare reușită le scoate din registru."""
     REGISTERED.pop(case.case_id, None)
+    INSOLVENT.pop(case.case_id, None)
     order, decision, customer = case.order, case.decision, case.customer
     if not (order and customer):
         return
+    if case.status == CaseStatus.AUTO_PROCESSED and order.doc_type == DocType.NOTIFICARE_INSOLVENTA:
+        INSOLVENT[case.case_id] = (case.scenario_id, customer.national_id)
+        for case_id in [k for k, (sid, nid, _g) in REGISTERED.items()
+                        if sid == case.scenario_id and nid == customer.national_id]:
+            del REGISTERED[case_id]           # popririle înființate în sesiune sunt suspendate
     if (case.status == CaseStatus.AUTO_PROCESSED and order.doc_type == DocType.POPRIRE_INFIINTARE
             and order.case_number and decision):
         REGISTERED[case.case_id] = (case.scenario_id, customer.national_id, ActiveGarnishment(

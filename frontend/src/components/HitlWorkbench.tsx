@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Check, LoaderCircle, OctagonAlert, Undo2 } from "lucide-react";
 import { api } from "../api/client";
 import type { Case, ClassifiedTransaction, ExceptionFlag, IncomeCategory, TxOverride } from "../types/contracts";
-import { CATEGORY_LABEL, EXCEPTION_LABEL, formatDate, formatRon } from "../lib/ui";
+import { CATEGORY_LABEL, EXCEPTION_LABEL, formatDate, formatRon, humanize } from "../lib/ui";
 
 // Excepții pe care backend-ul nu le poate accepta: dosarul trebuie returnat emitentului
 const NOT_APPROVABLE: Record<string, string> = {
@@ -15,6 +15,9 @@ const NOT_APPROVABLE: Record<string, string> = {
 type Choice = { kind: "reclassify"; category: IncomeCategory } | { kind: "accept" };
 
 const CATEGORIES = Object.keys(CATEGORY_LABEL) as IncomeCategory[];
+
+// Un dosar poate avea mai multe probleme cu același cod (ex. două încasări suspecte, ambele E06), deci cheia include poziția
+const keyOf = (e: ExceptionFlag, i: number) => `${e.code}-${i}`;
 
 function Option({
   name,
@@ -66,11 +69,13 @@ function SuspectTx({ tx }: { tx: ClassifiedTransaction }) {
 
 function ExceptionDecision({
   e,
+  id,
   data,
   choice,
   onChoose,
 }: {
   e: ExceptionFlag;
+  id: string;
   data: Case;
   choice: Choice | undefined;
   onChoose: (c: Choice) => void;
@@ -78,7 +83,7 @@ function ExceptionDecision({
   const label = EXCEPTION_LABEL[e.code] ?? e.code;
   const txs = data.classified_transactions.filter((t) => e.evidence.includes(t.tx_id));
   const blocked = NOT_APPROVABLE[e.code];
-  const name = `decision-${e.code}`;
+  const name = `decision-${id}`;
 
   return (
     <fieldset className="rounded-lg bg-canvas p-5">
@@ -87,7 +92,7 @@ function ExceptionDecision({
         <OctagonAlert size={17} className="text-danger" aria-hidden />
         {label}
       </div>
-      <p className="mt-1 text-sm leading-relaxed">{e.message}</p>
+      <p className="mt-1 text-sm leading-relaxed">{humanize(e.message)}</p>
 
       {txs.length > 0 && (
         <div className="mt-4 space-y-2">
@@ -162,17 +167,18 @@ export function HitlWorkbench({ data, onUpdated }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const actionable = open.filter((e) => !NOT_APPROVABLE[e.code]);
-  const missing = actionable.filter((e) => !choices[e.code]);
+  const actionable = open.map((e, i) => ({ e, key: keyOf(e, i) })).filter(({ e }) => !NOT_APPROVABLE[e.code]);
+  const missing = actionable.filter(({ key }) => !choices[key]);
   const canSubmit = actionable.length > 0 && missing.length === 0 && note.trim().length >= 3 && !busy;
 
   async function submit() {
     const overrides: TxOverride[] = [];
     const resolve: string[] = [];
-    for (const e of actionable) {
-      const c = choices[e.code];
-      if (c.kind === "accept") resolve.push(e.code);
-      else for (const id of e.evidence) if (data.classified_transactions.some((t) => t.tx_id === id)) overrides.push({ tx_id: id, category: c.category, note });
+    for (const { e, key } of actionable) {
+      const c = choices[key];
+      if (c.kind === "accept") {
+        if (!resolve.includes(e.code)) resolve.push(e.code);
+      } else for (const id of e.evidence) if (data.classified_transactions.some((t) => t.tx_id === id)) overrides.push({ tx_id: id, category: c.category, note });
     }
     setBusy(true);
     setError(null);
@@ -204,13 +210,14 @@ export function HitlWorkbench({ data, onUpdated }: Props) {
       </div>
 
       <div className="space-y-3 p-5">
-        {open.map((e) => (
+        {open.map((e, i) => (
           <ExceptionDecision
-            key={e.code + e.message}
+            key={keyOf(e, i)}
+            id={keyOf(e, i)}
             e={e}
             data={data}
-            choice={choices[e.code]}
-            onChoose={(c) => setChoices((s) => ({ ...s, [e.code]: c }))}
+            choice={choices[keyOf(e, i)]}
+            onChoose={(c) => setChoices((s) => ({ ...s, [keyOf(e, i)]: c }))}
           />
         ))}
 

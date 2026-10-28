@@ -1,8 +1,15 @@
 // Antetul dosarului deschis: titlu + alertă, cifrele cheie și fișa dosarului. Proprietar: Om4.
 import type { ReactNode } from "react";
-import { ArrowDown, ArrowLeft, CircleCheck, OctagonAlert } from "lucide-react";
+import { ArrowDown, ArrowLeft, CircleCheck, Info, OctagonAlert } from "lucide-react";
 import type { Case, CreditorType } from "../types/contracts";
-import { formatDate, formatRon } from "../lib/ui";
+import { caseTitle, DOC_LABEL, formatDate, formatRon, humanize } from "../lib/ui";
+
+const MODULE_LABEL: Record<string, string> = {
+  autoritati: "Cereri autorități",
+  sechestre: "Sechestre asigurătorii",
+  insolventa: "Insolvență și succesiuni",
+  gdpr: "Cereri GDPR",
+};
 import { StatusChip } from "./StatusChip";
 
 const CREDITOR_LABEL: Record<CreditorType, string> = {
@@ -31,7 +38,7 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
       </button>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3">
-        <h1 className="display text-[2rem]">{data.order?.debtor_name ?? data.customer?.full_name ?? "Debitor neidentificat"}</h1>
+        <h1 className="display text-[2rem]">{caseTitle(data)}</h1>
         {!pending && <StatusChip status={data.status} />}
       </div>
 
@@ -39,6 +46,20 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
         <div role="status" className="mt-5 flex items-center gap-3 rounded-md border border-ink/20 bg-sun-soft px-5 py-3.5 text-sm">
           <CircleCheck size={18} className="shrink-0" aria-hidden />
           <span className="font-semibold">{notice}</span>
+        </div>
+      )}
+
+      {!pending && data.status === "ROUTED_TO_OTHER_MODULE" && (
+        <div role="status" className="mt-5 flex gap-3.5 rounded-md border border-line-strong bg-canvas px-5 py-4 text-sm">
+          <Info size={20} className="mt-px shrink-0" aria-hidden />
+          <div>
+            <p className="font-bold">Documentul nu este o poprire</p>
+            <p className="mt-1">
+              Agentul de primire l-a clasificat ca {DOC_LABEL[data.doc_type].toLowerCase()} și l-a redirecționat către{" "}
+              {data.module_id && MODULE_LABEL[data.module_id] ? `modulul ${MODULE_LABEL[data.module_id]}` : "alt modul"}, aflat încă în dezvoltare.
+              PopririZero nu blochează sume și nu răspunde la acest document.
+            </p>
+          </div>
         </div>
       )}
 
@@ -51,7 +72,7 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
             </p>
             <ul className="mt-1 space-y-1 text-sm">
               {open.map((e) => (
-                <li key={e.code + e.message}>{e.message}</li>
+                <li key={e.code + e.message}>{humanize(e.message)}</li>
               ))}
             </ul>
             <p className="mt-2 text-sm font-semibold text-danger-ink">Nu s-a blocat nicio sumă. Un ofițer trebuie să verifice dosarul.</p>

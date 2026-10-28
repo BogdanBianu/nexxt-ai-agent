@@ -1,0 +1,84 @@
+{
+  "scenario_id": "S19",
+  "title": "Sechestru asigurător penal (Art. 249 CPP / ANABI) — Indisponibilizare multi-cont și depozit la termen",
+  "description": "Ordonanță a procurorului din cadrul Parchetului de pe lângă Tribunalul București de instituire a sechestrului asigurător penal (Art. 249 CPP raportat la Legea nr. 318/2015 ANABI) până la plafonul de 48.000 RON. Inculpatul deține un cont curent (12.000 RON sold anterior + 9.000 RON salariu -> 15.000 RON înghețați) și un depozit la termen (8.500 RON -> 100% înghețat), rezultând 23.500 RON indisponibilizați automat.",
+  "document": {
+    "document_id": "DOC-SECH-PEN-1890",
+    "filename": "ordonanta_sechestru_penal_PTB_ANABI_1890_P_2026.pdf",
+    "received_at": "2026-10-28T15:00:00Z",
+    "content_type": "text/plain",
+    "text": "MINISTERUL PUBLIC — PARCHETUL DE PE LÂNGĂ TRIBUNALUL BUCUREȘTI\nSecția de Urmărire Penală — Cooperare ANABI (Legea nr. 318/2015)\nDosar penal nr. 1890/P/2026\nData emiterii: 22.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A. — Direcția Operațiuni Juridice și Măsuri Asigurătorii\nObiect: ORDONANȚĂ DE INSTITUIRE A MĂSURII ASIGURĂTORII A SECHESTRULUI PENAL (ART. 249–252 COD PROCEDURĂ PENALĂ)\n\nÎn temeiul art. 249 alin. (1) și (5) din Codul de procedură penală și art. 27 din Legea nr. 318/2015 privind ANABI, procurorul dispune INSTITUIREA MĂSURII ASIGURĂTORII A SECHESTRULUI ASIGURĂTOR asupra conturilor în lei și în valută deținute de:\nInculpat: CANTACUZINO RAREȘ ANDREI, CNP: 1761105400344\nParte civilă:AGENȚIA NAȚIONALĂ DE ADMINISTRARE FISCALĂ — REPREZENTANT STATUL ROMÂN\nTemeiul măsurii: Măsură asigurătorie penală pentru repararea pagubei (Art. 249 CPP)\nPrejudiciu estimat: 45.000,00 RON\nCheltuieli judiciare: 3.000,00 RON\nPlafon măsură asigurătorie: 48.000,00 RON\n\nCont special unic de consemnare ANABI IBAN: RO53CECEB00008ANABI01890.\nPrezenta ordonanță poartă semnătură și ștampilă oficială a Parchetului L.S.",
+    "pdf_path": "pdfs/S19.pdf"
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-SECH-03",
+        "full_name": "CANTACUZINO RAREȘ ANDREI",
+        "national_id": "1761105400344",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Polonă nr. 19, Sector 1, București"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO76RZBR0000060043701890",
+        "customer_id": "CUST-SECH-03",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 12000.0,
+        "current_balance": 21000.0
+      },
+      {
+        "iban": "RO49RZBR0000060043701891",
+        "customer_id": "CUST-SECH-03",
+        "account_type": "DEPOZIT",
+        "currency": "RON",
+        "opening_balance": 8500.0,
+        "current_balance": 8500.0
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-SECH11-01",
+        "iban": "RO76RZBR0000060043701890",
+        "booking_date": "2026-08-15",
+        "direction": "CREDIT",
+        "amount": 9000.0,
+        "counterparty_name": "SC KRONSTADT ENGINEERING GROUP SRL",
+        "counterparty_iban": null,
+        "description": "Salariu net luna Iulie"
+      },
+      {
+        "tx_id": "TX-SECH11-02",
+        "iban": "RO76RZBR0000060043701890",
+        "booking_date": "2026-09-15",
+        "direction": "CREDIT",
+        "amount": 9000.0,
+        "counterparty_name": "SC KRONSTADT ENGINEERING GROUP SRL",
+        "counterparty_iban": null,
+        "description": "Salariu net luna August"
+      },
+      {
+        "tx_id": "TX-SECH11-03",
+        "iban": "RO76RZBR0000060043701890",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 9000.0,
+        "counterparty_name": "SC KRONSTADT ENGINEERING GROUP SRL",
+        "counterparty_iban": null,
+        "description": "Salariu net luna Septembrie"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "SECHESTRU_INSTITUIRE",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 23500.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

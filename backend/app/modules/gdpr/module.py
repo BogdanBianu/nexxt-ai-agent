@@ -49,9 +49,20 @@ Extrage din cererea GDPR următoarele câmpuri în format JSON:
 - has_legal_basis: true dacă este invocat Regulamentul (UE) 2016/679 sau legislația conexă de protecția datelor."""
 
 
-def _detect_gdpr_right(text: str) -> str:
+GDPR_RIGHTS = {"ACCES", "STERGERE", "OPOZITIE", "PORTABILITATE", "ANSPDCP"}
+# drepturile care TRIMIT date solicitantului: fără identitate verificată nu se răspunde automat (Art. 12 alin. 6)
+DISCLOSING_RIGHTS = {"ACCES", "PORTABILITATE"}
+
+
+def _is_from_anspdcp(text: str) -> bool:
+    """Emitentul e ANSPDCP doar dacă apare în antet. Un client care scrie „pot sesiza ANSPDCP” rămâne client."""
+    head = normalize_text(" ".join(ln for ln in text.splitlines()[:3]))
+    return "ANSPDCP" in head or "AUTORITATEA NATIONALA DE SUPRAVEGHERE" in head
+
+
+def _detect_gdpr_right(text: str, from_anspdcp: bool = False) -> str:
     norm = normalize_text(text)
-    if "ANSPDCP" in norm or "AUTORITATEA NATIONALA DE SUPRAVEGHERE" in norm:
+    if from_anspdcp:
         return "ANSPDCP"
     if any(k in norm for k in ["STERGERE", "STERGEREA", "DE A FI UITAT", "ART. 17", "ART 17", "ELIMINAREA DATELOR"]):
         return "STERGERE"
@@ -67,7 +78,7 @@ def _extract_gdpr_order(text: str) -> tuple[GarnishmentOrder, str, bool]:
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     first_line = lines[0] if lines else "SOLICITARE GDPR"
 
-    is_anspdcp = "ANSPDCP" in norm or "AUTORITATEA NATIONALA" in norm
+    is_anspdcp = _is_from_anspdcp(text)
     if is_anspdcp:
         issuer_name = "AUTORITATEA NAȚIONALĂ DE SUPRAVEGHERE A PRELUCRĂRII DATELOR CU CARACTER PERSONAL (ANSPDCP)"
         issuer_type = IssuerType.ANSPDCP
@@ -75,7 +86,9 @@ def _extract_gdpr_order(text: str) -> tuple[GarnishmentOrder, str, bool]:
         issuer_type = IssuerType.PERSOANA_FIZICA
         issuer_name = first_line[:120]
 
-    case_m = re.search(r"(?:Nr\.?\s*(?:de\s+inregistrare|adresa|lucrare)?|Dosar|Ref\.?)[:\s]*([0-9A-Z/\-]+)", text, re.I)
+    # „Nr. înregistrare: GDPR-2026-789”; \b + cel puțin o cifră: nu prinde „nr” din interiorul cuvântului „înregistrare”
+    case_m = re.search(r"\b(?:Nr\.?\s*(?:de\s+)?(?:[îi]nregistrare|adres[ăa]|lucrare)?|Dosar(?:\s+nr\.?)?|Ref\.?)"
+                       r"\s*:?\s*([A-Z0-9][A-Z0-9/\-]*\d[A-Z0-9/\-]*)", text, re.I)
     date_m = re.search(r"(?:Data|București,\s*la\s*data\s*de):?\s*(\d{2}\.\d{2}\.\d{4})", text, re.I)
 
     text = text.replace("\\n", "\n")
@@ -97,7 +110,7 @@ def _extract_gdpr_order(text: str) -> tuple[GarnishmentOrder, str, bool]:
 
     has_sig = bool(re.search(r"semn[ăa]tur[ăa]|L\.S\.|autentificat|smart\s*mobile|semn[ăa]tur[ăa]\s*electronic[ăa]", text, re.I))
     legal_basis_ok = bool(re.search(r"REGULAMENT(?:UL)?\s*(?:\(UE\))?\s*(?:2016/)?679|GDPR|ART\.?\s*(?:15|17|20|21)|LEGEA\s*190/2018", norm))
-    gdpr_right = _detect_gdpr_right(text)
+    gdpr_right = _detect_gdpr_right(text, is_anspdcp)
 
     order = GarnishmentOrder(
         doc_type=DocType.CERERE_GDPR,
@@ -124,7 +137,7 @@ def _extract_gdpr_order(text: str) -> tuple[GarnishmentOrder, str, bool]:
             order.debtor_name = normalize_text(str(llm_data["debtor_name"]))
         if not order.debtor_id and llm_data.get("debtor_id"):
             order.debtor_id = re.sub(r"\D", "", str(llm_data["debtor_id"]))
-        if llm_data.get("gdpr_right"):
+        if str(llm_data.get("gdpr_right", "")).upper() in GDPR_RIGHTS and not is_anspdcp:
             gdpr_right = str(llm_data["gdpr_right"]).upper()
         if "has_legal_basis" in llm_data and not legal_basis_ok:
             legal_basis_ok = bool(llm_data["has_legal_basis"])
@@ -247,9 +260,14 @@ class GdprModule:
                 evidence=missing))
 
         if not order.has_signature_and_stamp and order.issuer_type != IssuerType.ANSPDCP:
+            # acces / portabilitate trimit datele bancare: fără identitate verificată = posibilă încălcare de date
+            disclosing = gdpr_right in DISCLOSING_RIGHTS
             exceptions.append(ExceptionFlag(
-                code=ExceptionCode.E05_DOCUMENT_INVALID, severity=Severity.WARNING, agent=AgentName.EXTRACTION,
-                message="Cererea nu poartă semnătură verificată sau canal autentificat 2FA (Smart Mobile).",
+                code=ExceptionCode.E05_DOCUMENT_INVALID,
+                severity=Severity.BLOCKING if disclosing else Severity.WARNING, agent=AgentName.EXTRACTION,
+                message="Cererea nu poartă semnătură verificată sau canal autentificat 2FA (Smart Mobile)."
+                        + (" Datele bancare nu se trimit până la verificarea identității solicitantului "
+                           "(Art. 12 alin. (6) GDPR)." if disclosing else ""),
                 evidence=["has_signature_and_stamp"]))
 
         if not legal_basis_ok:
@@ -332,7 +350,7 @@ class GdprModule:
                 confidence=1.0,
                 rationale="Date contractuale și solduri stocate pe durata contractului conform OUG 99/2006.",
             ))
-        for t in transactions[:10]:
+        for t in sorted(transactions, key=lambda t: t.booking_date, reverse=True)[:10]:   # cele mai recente
             classified.append(ClassifiedTransaction(
                 tx_id=t.tx_id,
                 iban=t.iban,
