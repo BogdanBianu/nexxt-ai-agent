@@ -10,19 +10,30 @@ from app.core.validators import normalize_text
 
 _KEYWORDS: list[tuple[DocType, list[str]]] = [
     # Ordinea contează: cele mai specifice primele
-    (DocType.POPRIRE_SISTARE, [
-        "SISTARE A POPRIRII", "SISTAREA POPRIRII", "RIDICARE A POPRIRII",
-        "RIDICAREA POPRIRII", "INCETARE A POPRIRII", "INCETAREA POPRIRII",
-        "DESFIINTAREA POPRIRII", "RIDICARE A MASURILOR ASIGURATORII",
-        "RIDICAREA MASURILOR ASIGURATORII", "RIDICAREA SECHESTRULUI ASIGURATOR",
-        "RIDICARE A MASURII ASIGURATORII",
+    (DocType.CERTIFICAT_MOSTENITOR, [
+        "CERTIFICAT DE MOSTENITOR", "CERTIFICATUL DE MOSTENITOR", "CERTIFICAT DE CALITATE DE MOSTENITOR",
     ]),
-    (DocType.POPRIRE_INFIINTARE, [
+    (DocType.NOTIFICARE_INSOLVENTA, [
+        "DESCHIDEREA PROCEDURII INSOLVENTEI", "DESCHIDERE A PROCEDURII INSOLVENTEI",
+        "DESCHIDEREA PROCEDURII GENERALE A INSOLVENTEI", "DESCHIDEREA PROCEDURII SIMPLIFICATE",
+        "DESCHIDEREA FALIMENTULUI", "LEGEA NR. 85/2014", "LEGII NR. 85/2014", "LEGEA 85/2014", "LEGII 85/2014",
+    ]),
+    # sechestrele înaintea popririlor: o ridicare de sechestru vorbește și de „sechestru asigurător”
+    (DocType.SECHESTRU_RIDICARE, [
+        "RIDICARE A MASURILOR ASIGURATORII", "RIDICAREA MASURILOR ASIGURATORII",
+        "RIDICAREA SECHESTRULUI ASIGURATOR", "RIDICARE A MASURII ASIGURATORII", "RIDICAREA MASURII ASIGURATORII",
+    ]),
+    (DocType.SECHESTRU_INSTITUIRE, [
         "DECIZIE DE INSTITUIRE A MASURILOR ASIGURATORII",
         "ORDONANTA DE INSTITUIRE A MASURII ASIGURATORII",
         "INSTITUIREA MASURII ASIGURATORII A SECHESTRULUI",
         "INSTITUIRE A SECHESTRULUI ASIGURATOR",
-        "SECHESTRU ASIGURATOR", "SECHESTRULUI ASIGURATOR",
+        "SECHESTRU ASIGURATOR", "SECHESTRULUI ASIGURATOR", "MASURILOR ASIGURATORII", "MASURI ASIGURATORII",
+    ]),
+    (DocType.POPRIRE_SISTARE, [
+        "SISTARE A POPRIRII", "SISTAREA POPRIRII", "RIDICARE A POPRIRII",
+        "RIDICAREA POPRIRII", "INCETARE A POPRIRII", "INCETAREA POPRIRII",
+        "DESFIINTAREA POPRIRII",
     ]),
     (DocType.CERERE_AUTORITATE, [
         "INSPECTORATUL DE POLITIE", "INSPECTORATUL GENERAL AL POLITIEI", "PARCHETUL",
@@ -42,6 +53,14 @@ _KEYWORDS: list[tuple[DocType, list[str]]] = [
     ]),
 ]
 
+_TARGET_MODULE = {
+    DocType.CERERE_AUTORITATE: "autoritati (Cereri autorități)",
+    DocType.SECHESTRU_INSTITUIRE: "sechestre (Sechestre asigurătorii)",
+    DocType.SECHESTRU_RIDICARE: "sechestre (Sechestre asigurătorii)",
+    DocType.NOTIFICARE_INSOLVENTA: "insolventa (Insolvență și succesiuni)",
+    DocType.CERTIFICAT_MOSTENITOR: "insolventa (Insolvență și succesiuni)",
+}
+
 _SYSTEM = """Ești ofițerul de triaj (Intake Router) din departamentul Operațiuni Juridice al Raiffeisen Bank România.
 Clasifici documentul primit într-una din categoriile:
 - POPRIRE_INFIINTARE: adresă de înființare a popririi de la executor judecătoresc (BEJ) sau ANAF (Art. 781 CPC).
@@ -49,6 +68,10 @@ Clasifici documentul primit într-una din categoriile:
 - POPRIRE_MODIFICARE: adresă de modificare a cuantumului sumei poprite.
 - CERERE_INFORMATII: solicitare de informații de la executor fără indisponibilizare de sume.
 - CERERE_AUTORITATE: solicitare de la Poliție (IGPR/IPJ), Parchet, DNA, DIICOT într-un dosar penal (se rutează către modulul Cereri Autorități).
+- SECHESTRU_INSTITUIRE: decizie / încheiere / ordonanță de instituire a sechestrului asigurător (fiscal Art. 213 CPF, civil Art. 952 CPC, penal Art. 249 CPP).
+- SECHESTRU_RIDICARE: decizie / încheiere de ridicare a măsurii asigurătorii (a sechestrului).
+- NOTIFICARE_INSOLVENTA: notificare de la tribunal / administrator / lichidator judiciar despre deschiderea procedurii insolvenței sau a falimentului (Legea 85/2014).
+- CERTIFICAT_MOSTENITOR: certificat de moștenitor emis de notarul public după decesul unui client (succesiune).
 - NECUNOSCUT: documentul nu se încadrează în niciuna din categoriile de mai sus.
 
 Returnează JSON cu formatul:
@@ -66,10 +89,7 @@ def classify_document(doc: IncomingDocument, emit: EmitFn) -> tuple[DocType, flo
         hit = next((k for k in keys if k in text), None)
         if hit:
             reason = f"Expresie cheie identificată în document: „{hit.lower()}”"
-            target_module = "popriri (PopririZero)" if doc_type in (
-                DocType.POPRIRE_INFIINTARE, DocType.POPRIRE_SISTARE,
-                DocType.POPRIRE_MODIFICARE, DocType.CERERE_INFORMATII,
-            ) else "autoritati (Cereri autorități)"
+            target_module = _TARGET_MODULE.get(doc_type, "popriri (PopririZero)")
             emit(AgentName.INTAKE_ROUTER, AgentStatus.COMPLETED,
                  f"Document clasificat: {doc_type.value} → {target_module}",
                  {"doc_type": doc_type.value, "confidence": 0.96, "method": "KEYWORD",

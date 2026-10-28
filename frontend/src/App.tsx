@@ -89,7 +89,8 @@ export default function App() {
   // Documentele redirecționate și cererile autorităților nu au sume de blocat, fișă de poprire sau calcul pe extras
   const seizure = !!current && isSeizure(current);
   const authority = current?.module_id === "autoritati";
-  const lean = routed || (seizure && isLifting(current));
+  // Insolvența nu are încă panouri proprii; cifrele de poprire ar fi greșite acolo
+  const lean = routed || (seizure && isLifting(current)) || current?.module_id === "insolventa";
   const activeTab: Tab = lean && tab === "analysis" ? "documents" : tab;
   const navModule = selectedId ? (current ? moduleOf(current) : view) : view;
 

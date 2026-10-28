@@ -45,17 +45,44 @@ def load_sechestre_issuers() -> list[dict]:
     return data.get("issuers", [])
 
 
+def match_issuer(norm: str) -> dict | None:
+    """Emitentul cu cuvântul cheie cel mai lung (cel mai specific) găsit în text.
+
+    „PARCHETUL DE PE LANGA TRIBUNALUL BUCURESTI” conține și „TRIBUNALUL BUCURESTI”: câștigă Parchetul,
+    nu tribunalul civil, indiferent de ordinea din registru.
+    """
+    best, best_len = None, 0
+    for entry in load_sechestre_issuers():
+        hit = max((len(k) for k in entry.get("keywords", []) if k in norm), default=0)
+        if hit > best_len:
+            best, best_len = entry, hit
+    return best
+
+
+# Fără emitent în registru, tipul măsurii se deduce din temeiul invocat în document
+_MEASURE_FALLBACK = [
+    ("SECHESTRU_ASIGURATOR_PENAL", ("PROCEDURA PENALA", "CPP", "PENAL", "PARCHET", "PROCUROR", "ANABI"),
+     "Art. 249-254 din Legea nr. 135/2010 privind Codul de procedură penală"),
+    ("SECHESTRU_ASIGURATOR_FISCAL", ("PROCEDURA FISCALA", "CPF", "ANAF", "FISCAL"),
+     "Art. 213 din Legea nr. 207/2015 privind Codul de procedură fiscală"),
+    ("SECHESTRU_ASIGURATOR_CIVIL", ("",),
+     "Art. 952-959 din Legea nr. 134/2010 privind Codul de procedură civilă"),
+]
+
+
+def measure_of(norm: str, issuer: dict | None) -> tuple[str, str]:
+    if issuer and issuer.get("measure_type"):
+        return issuer["measure_type"], issuer.get("legal_basis", "")
+    return next((m, basis) for m, keys, basis in _MEASURE_FALLBACK if any(k in norm for k in keys))
+
+
 def parse_sechestru_order(text: str, doc_type: DocType) -> GarnishmentOrder:
     norm = normalize_text(text)
     lines = [l.strip() for l in text.splitlines() if l.strip()]
     first_line = lines[0] if lines else ""
 
     # 1. Identificare în registrul oficial al emitenților de sechestre (data/sechestre_issuers_registry.json)
-    matched_issuer = None
-    for entry in load_sechestre_issuers():
-        if any(k in norm for k in entry.get("keywords", [])):
-            matched_issuer = entry
-            break
+    matched_issuer = match_issuer(norm)
 
     if matched_issuer:
         issuer_name = matched_issuer["name"]
@@ -140,6 +167,7 @@ def parse_sechestru_order(text: str, doc_type: DocType) -> GarnishmentOrder:
         references_case_number=ref or (case_no if doc_type == DocType.POPRIRE_SISTARE else None),
         extraction_method="SECHESTRE_OFFICIAL_PARSER",
     )
+    order.measure_type, order.legal_basis = measure_of(norm, matched_issuer)
     order.field_confidence = {
         f: (0.98 if getattr(order, f) not in (None, "", Decimal(0)) else 0.0)
         for f in GarnishmentOrder.model_fields
@@ -155,6 +183,9 @@ def run_sechestre_extraction(state: dict, ctx: AgentContext) -> dict:
     emit(AgentName.EXTRACTION, AgentStatus.STARTED, "Extrag datele oficiale din actul de măsură asigurătorie (sechestru)", {})
 
     order = parse_sechestru_order(doc.text or "", doc_type)
+    emit(AgentName.EXTRACTION, AgentStatus.PROGRESS,
+         f"Emitent: {order.issuer_name} · {order.measure_type} · {order.legal_basis}",
+         {"issuer_name": order.issuer_name, "measure_type": order.measure_type, "legal_basis": order.legal_basis})
     exceptions: list[ExceptionFlag] = []
 
     required_fields = [
@@ -235,6 +266,7 @@ def run_sechestre_extraction(state: dict, ctx: AgentContext) -> dict:
         AgentName.EXTRACTION,
         AgentStatus.COMPLETED,
         f"Măsură asigurătorie extrasă: dosar {order.case_number}, debitor {order.debtor_name}, plafon {order.total_due} RON",
-        {"order": order.model_dump(mode="json"), "exceptions": [e.code.value for e in exceptions]},
+        {"order": order.model_dump(mode="json"), "exceptions": [e.code.value for e in exceptions],
+         "measure_type": order.measure_type, "legal_basis": order.legal_basis},
     )
     return {"order": order, "exceptions": exceptions}

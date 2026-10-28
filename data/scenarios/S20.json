@@ -49,7 +49,7 @@
     ]
   },
   "expected": {
-    "doc_type": "POPRIRE_SISTARE",
+    "doc_type": "SECHESTRU_RIDICARE",
     "status": "LIFTED",
     "amount_to_hold": 0.0,
     "exception_codes": [],

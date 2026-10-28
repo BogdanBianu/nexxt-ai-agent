@@ -34,6 +34,12 @@ const MODULE_COPY: Record<string, ModuleCopy> = {
     empty: "Nicio cerere de la autorități primită",
     allClear: "Nimic de verificat. Toate cererile primite au primit răspuns automat.",
   },
+  insolventa: {
+    title: "Insolvență și succesiuni",
+    simulate: "Simulează notificare",
+    empty: "Nicio notificare de insolvență sau succesiune primită",
+    allClear: "Nimic de verificat. Toate notificările primite au fost procesate automat.",
+  },
   sechestre: {
     title: "Sechestre asigurătorii",
     simulate: "Simulează sechestru",
@@ -47,10 +53,11 @@ export const copyFor = (moduleId: string) => MODULE_COPY[moduleId] ?? GENERIC;
 // Dosarele vechi, de dinainte de rutare, nu au modul: sunt popriri
 export const moduleOf = (c: Pick<CaseSummary, "module_id">) => c.module_id ?? "popriri";
 
-// Sechestrele folosesc tot tipurile POPRIRE_* din contracte; le numim după modul ca ofițerul să nu le confunde
+// Dosarele de sechestru mai vechi foloseau tipurile POPRIRE_*; le numim după modul ca să nu fie confundate
 export function typeLabel(c: Pick<CaseSummary, "module_id" | "doc_type">) {
-  if (moduleOf(c) === "sechestre") return c.doc_type === "POPRIRE_SISTARE" ? "Ridicare sechestru" : "Instituire sechestru";
-  return DOC_LABEL[c.doc_type];
+  if (moduleOf(c) === "sechestre" && c.doc_type.startsWith("POPRIRE_"))
+    return c.doc_type === "POPRIRE_SISTARE" ? "Ridicare sechestru" : "Instituire sechestru";
+  return DOC_LABEL[c.doc_type] ?? c.doc_type;
 }
 
 export function statusLabel(c: Pick<CaseSummary, "module_id" | "status">) {
@@ -60,6 +67,7 @@ export function statusLabel(c: Pick<CaseSummary, "module_id" | "status">) {
 
 // Scenariile nu au câmp de modul; tipul se recunoaște după titlu
 const SEIZURE = /sechestr/i;
+const INSOLVENCY = /insolven|faliment|succesiun|moștenit/i;
 const AUTHORITY = /poliți|parchet|dna|diicot|autorit/i;
 export const scenarioModule = (s: ScenarioInfo) =>
-  SEIZURE.test(s.title) ? "sechestre" : AUTHORITY.test(s.title) ? "autoritati" : "popriri";
+  SEIZURE.test(s.title) ? "sechestre" : INSOLVENCY.test(s.title) ? "insolventa" : AUTHORITY.test(s.title) ? "autoritati" : "popriri";

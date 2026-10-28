@@ -16,6 +16,7 @@ def isolated_store(tmp_path, monkeypatch):
     from app import config, main
     monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path / "uploads")
     monkeypatch.setattr(config, "OUTPUT_DIR", tmp_path / "output")
-    for store in (main.CASES, main.BANKS, main.EVENTS, main.PROCESSING_MS, main.AUDIT_LOG, main.REGISTERED):
+    for store in (main.CASES, main.BANKS, main.EVENTS, main.PROCESSING_MS, main.AUDIT_LOG, main.REGISTERED,
+                  main.INSOLVENT):
         store.clear()
     yield

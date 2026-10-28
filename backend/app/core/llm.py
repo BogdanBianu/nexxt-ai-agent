@@ -191,3 +191,60 @@ def chat_text(system: str, user: str, temperature: float = 0.2, max_tokens: int 
     if not config.llm_enabled():
         return None
     return _call_bedrock(system=system, user=user, temperature=temperature, max_tokens=max_tokens)
+
+
+def ocr_image_bytes(image_bytes: bytes, fmt: str = "png") -> str | None:
+    """Transcrie o pagină scanată (blurată / rotită / rezoluție slabă) folosind AWS Bedrock Multimodal Vision."""
+    if not config.llm_enabled() or not image_bytes:
+        return None
+
+    img_hash = hashlib.sha256(image_bytes).hexdigest()
+    key_path = _CACHE_DIR / f"ocr_{img_hash}.json"
+    cached_text = _read_cache(key_path)
+    if cached_text is not None:
+        return cached_text
+
+    client = _get_bedrock_client()
+    candidates = [config.LLM_MODEL] + [m for m in _FALLBACK_BEDROCK_MODELS if m != config.LLM_MODEL]
+    system_prompt = (
+        "Ești un motor OCR juridic-bancar de înaltă precizie pentru documente oficiale în limba română. "
+        "Transcrie fidel TOT textul din imagine (inclusiv antet, număr dosar, CNP/CUI, IBAN, sume în RON, "
+        "debitor, creditor). Nu adăuga comentarii sau explicații — returnează exclusiv textul din document."
+    )
+    user_prompt = "Transcrie integral textul din această pagină scanată:"
+
+    for model_id in candidates:
+        t0 = time.perf_counter()
+        try:
+            resp = client.converse(
+                modelId=model_id,
+                system=[{"text": system_prompt}],
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"image": {"format": fmt, "source": {"bytes": image_bytes}}},
+                        {"text": user_prompt},
+                    ],
+                }],
+                inferenceConfig={"temperature": 0.0, "maxTokens": 1800},
+            )
+            elapsed_ms = int((time.perf_counter() - t0) * 1000)
+            blocks = resp.get("output", {}).get("message", {}).get("content", [])
+            text = "".join(b.get("text", "") for b in blocks if "text" in b).strip()
+            usage = resp.get("usage", {})
+            in_tok = int(usage.get("inputTokens", 0))
+            out_tok = int(usage.get("outputTokens", 0))
+            if text:
+                _LAST_METRICS.update({
+                    "model": model_id,
+                    "latency_ms": elapsed_ms,
+                    "input_tokens": in_tok,
+                    "output_tokens": out_tok,
+                    "cached": False,
+                })
+                _write_cache(key_path, text, model_id, in_tok, out_tok)
+                return text
+        except Exception as exc:
+            log.warning("Bedrock Vision OCR failed on %s: %s", model_id, exc)
+            continue
+    return None

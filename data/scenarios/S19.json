@@ -74,7 +74,7 @@
     "active_garnishments": []
   },
   "expected": {
-    "doc_type": "POPRIRE_INFIINTARE",
+    "doc_type": "SECHESTRU_INSTITUIRE",
     "status": "AUTO_PROCESSED",
     "amount_to_hold": 23500.0,
     "exception_codes": [],

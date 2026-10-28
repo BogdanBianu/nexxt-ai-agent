@@ -1,9 +1,8 @@
 // Încărcarea unei adrese reale (PDF/.txt): buton + dialog cu drag & drop + overlay de drop pe toată pagina. Proprietar: Om4.
-// Core Banking e simulat per scenariu, deci fiecare încărcare rulează pe datele bancare ale unui scenariu de test.
+// Backend-ul identifică automat în memorie clientul și conturile sale după CNP / nume / numărul dosarului din document.
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { FileText, LoaderCircle, Upload, X } from "lucide-react";
-import { api, uploadDocument } from "../api/client";
-import type { ScenarioInfo } from "../types/contracts";
+import { uploadDocument } from "../api/client";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -13,12 +12,6 @@ function validate(file: File): string | null {
   if (file.size === 0) return "Fișierul e gol.";
   if (file.size > MAX_BYTES) return "Fișierul depășește 10 MB.";
   return null;
-}
-
-// „S4.pdf”, „adresa_S4_bej.pdf” → S4
-function scenarioFromName(name: string, ids: string[]) {
-  const m = name.toUpperCase().match(/(?:^|[^A-Z0-9])(S\d+)(?:[^0-9]|$)/);
-  return m && ids.includes(m[1]) ? m[1] : null;
 }
 
 const formatSize = (b: number) => (b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`);
@@ -34,9 +27,7 @@ interface DialogProps {
 }
 
 function UploadDialog({ initialFile, onClose, onUploaded }: DialogProps) {
-  const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
   const [file, setFile] = useState<File | null>(null);
-  const [scenarioId, setScenarioId] = useState("");
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +35,6 @@ function UploadDialog({ initialFile, onClose, onUploaded }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api.listScenarios().then(setScenarios).catch(() => setScenarios([]));
     panelRef.current?.focus();
   }, []);
 
@@ -54,34 +44,28 @@ function UploadDialog({ initialFile, onClose, onUploaded }: DialogProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [busy, onClose]);
 
-  const ids = scenarios.map((s) => s.scenario_id);
-
   function pick(f: File) {
     const problem = validate(f);
     setError(problem);
     setFile(problem ? null : f);
-    if (!problem) setScenarioId(scenarioFromName(f.name, ids) ?? ids[0] ?? "S1");
   }
 
-  // Fișierul tras pe pagină ajunge aici după ce s-au încărcat scenariile (pentru detecție)
   useEffect(() => {
-    if (initialFile && scenarios.length) pick(initialFile);
-  }, [initialFile, scenarios.length]);
+    if (initialFile) pick(initialFile);
+  }, [initialFile]);
 
   async function submit() {
     if (!file) return;
     setBusy(true);
     setError(null);
     try {
-      const created = await uploadDocument(file, scenarioId);
+      const created = await uploadDocument(file, "AUTO");
       onUploaded(created.case_id);
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
     }
   }
-
-  const detected = file ? scenarioFromName(file.name, ids) : null;
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-labelledby="upload-title">
@@ -92,7 +76,9 @@ function UploadDialog({ initialFile, onClose, onUploaded }: DialogProps) {
             <h2 id="upload-title" className="display text-xl">
               Încarcă un document
             </h2>
-            <p className="mt-0.5 text-sm text-muted">Poprire, cerere de la autorități sau alt act. Agenții recunosc singuri tipul și îl procesează.</p>
+            <p className="mt-0.5 text-sm text-muted">
+              Poprire, sechestru, cerere de la autorități sau alt act. Agenții recunosc tipul și găsesc singuri clientul în Core Banking.
+            </p>
           </div>
           <button onClick={onClose} disabled={busy} aria-label="Închide" className="grid h-8 w-8 shrink-0 place-items-center rounded-md hover:bg-canvas">
             <X size={18} aria-hidden />
@@ -134,7 +120,7 @@ function UploadDialog({ initialFile, onClose, onUploaded }: DialogProps) {
               <FileText size={22} strokeWidth={1.75} className="shrink-0" aria-hidden />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">{file.name}</div>
-                <div className="text-xs text-muted">{formatSize(file.size)}</div>
+                <div className="text-xs text-muted">{formatSize(file.size)} · Clientul va fi căutat automat în baza de date a băncii</div>
               </div>
               {!busy && (
                 <button onClick={() => setFile(null)} className="text-sm font-semibold underline underline-offset-4">
@@ -155,29 +141,6 @@ function UploadDialog({ initialFile, onClose, onUploaded }: DialogProps) {
               e.target.value = "";
             }}
           />
-
-          {file && (
-            <label className="block">
-              <span className="text-sm font-semibold">Date bancare de test</span>
-              <select
-                value={scenarioId}
-                onChange={(e) => setScenarioId(e.target.value)}
-                disabled={busy}
-                className="mt-1.5 h-10 w-full rounded-md border border-line-strong bg-paper px-2.5 text-sm"
-              >
-                {scenarios.map((s) => (
-                  <option key={s.scenario_id} value={s.scenario_id}>
-                    {s.scenario_id}: {s.title}
-                  </option>
-                ))}
-              </select>
-              <span className="mt-1.5 block text-xs text-muted">
-                {detected
-                  ? `Detectat din numele fișierului. Core Banking e simulat, deci clientul și conturile vin din scenariul ${detected}.`
-                  : "Core Banking e simulat: alege scenariul ale cărui conturi corespund persoanei din document, altfel nu va fi găsită."}
-              </span>
-            </label>
-          )}
 
           {error && (
             <p role="alert" className="rounded-md border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger-ink">

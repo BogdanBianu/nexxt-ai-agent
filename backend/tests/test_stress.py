@@ -1,9 +1,8 @@
 """Teste de stres: încearcă să strice platforma cu documente și cereri ostile. Proprietar: Om2.
 
-Două tipuri de teste:
-- normale: probleme găsite și reparate (trebuie să treacă mereu);
-- `xfail(strict=True)`: BUG-uri cunoscute, încă nereparate, în fișierele altui membru. Suita rămâne verde,
-  dar când bug-ul e reparat testul devine roșu („XPASS strict”) — atunci ștergeți marcajul `xfail`.
+Fiecare test e o problemă găsită și reparată: trebuie să treacă mereu.
+Un bug nou, încă nereparat, se poate marca temporar cu `pytest.mark.xfail(strict=True, reason=...)`:
+când e reparat, testul devine roșu („XPASS strict”) și atunci se șterge marcajul.
 """
 import json
 from decimal import Decimal
@@ -18,9 +17,6 @@ from app.main import app
 client = TestClient(app)
 S1_TEXT_CNP = "IONESCU MIHAI, CNP: 1850615400011"
 
-
-def known_bug(owner: str, reason: str):
-    return pytest.mark.xfail(strict=True, reason=f"BUG cunoscut ({owner}): {reason}")
 
 
 def run_variant(monkeypatch, base="S1", text=None, bank=None, review=None) -> dict:
@@ -66,7 +62,7 @@ def test_binary_garbage_txt_does_not_crash():
     assert res.json()["status"] != "FAILED"
 
 
-def test_review_with_unknown_tx_and_on_routed_case_does_not_crash():
+def test_review_with_unknown_tx_and_on_other_module_does_not_crash():
     s1 = client.post("/api/cases/from-scenario", json={"scenario_id": "S1"}).json()
     res = client.post(f"/api/cases/{s1['case_id']}/review",
                       json={"reviewer": "x", "overrides": [{"tx_id": "NU-EXISTA", "category": "SALARIU"}]})
@@ -74,7 +70,8 @@ def test_review_with_unknown_tx_and_on_routed_case_does_not_crash():
 
     s8 = client.post("/api/cases/from-scenario", json={"scenario_id": "S8"}).json()
     res = client.post(f"/api/cases/{s8['case_id']}/review", json={"reviewer": "x", "resolve_codes": ["E01"]})
-    assert res.status_code == 200 and res.json()["status"] == "ROUTED_TO_OTHER_MODULE"
+    assert res.status_code == 200 and res.json()["status"] != "FAILED"
+    assert res.json()["module_id"] == "autoritati"
 
 
 def test_invalid_review_payload_is_422():
@@ -158,24 +155,20 @@ def test_negative_balance_holds_nothing(monkeypatch):
     assert hold(run_variant(monkeypatch, bank=overdraft)) == 0
 
 
-# ---------- BUG-uri cunoscute, încă nereparate (Om1) ----------
+# ---------- foste bug-uri din agenții PopririZero (reparate, nu trebuie să revină) ----------
 
-@known_bug("Om1, agents/outcome.py", "dacă ofițerul rezolvă E01, decision e None și outcome crapă (AttributeError)")
 def test_resolving_identity_exception_does_not_crash(monkeypatch):
     case = run_variant(monkeypatch, text=lambda t: t.replace("1850615400011", "1850615400019"),
                        review={"reviewer": "x", "resolve_codes": ["E01"]})
     assert case["status"] != "FAILED"
 
 
-@known_bug("Om1, agents/outcome.py", "rezolvarea duplicatului E02 (S6) crapă la fel")
 def test_resolving_duplicate_does_not_crash():
     s6 = client.post("/api/cases/from-scenario", json={"scenario_id": "S6"}).json()
     res = client.post(f"/api/cases/{s6['case_id']}/review", json={"reviewer": "x", "resolve_codes": ["E02"]}).json()
     assert res["status"] != "FAILED"
 
 
-@known_bug("Om1, agents/outcome.py",
-           "fără cont CURENT nu se emite niciun ordin de blocare, dar dosarul apare AUTO_PROCESSED cu 5.800 RON blocați")
 def test_hold_instruction_exists_when_client_has_only_savings_account(monkeypatch):
     def savings_only(bank):
         bank["accounts"][0]["account_type"] = "ECONOMII"
@@ -184,9 +177,6 @@ def test_hold_instruction_exists_when_client_has_only_savings_account(monkeypatc
     assert sum(h["amount"] for h in case["decision"]["hold_instructions"]) == float(hold(case))
 
 
-@known_bug("Om1, agents/income_classifier.py",
-           "formele articulate („Alocatia”, „Salariul”, „Pensia”) nu sunt recunoscute: alocația copilului de la un "
-           "plătitor necunoscut devine ALT_VENIT și e poprită 100%, fără alertă (sub pragul E03 de 500 RON)")
 def test_child_allowance_with_articulated_word_is_protected(monkeypatch):
     def unknown_payer(bank):
         for t in bank["transactions"]:
@@ -197,20 +187,17 @@ def test_child_allowance_with_articulated_word_is_protected(monkeypatch):
     assert hold(case) == Decimal("5800")       # alocația rămâne protejată
 
 
-@known_bug("Om1, agents/extraction.py", "data emiterii în viitor nu e verificată (validate_issue_date nefolosit)")
 def test_issue_date_in_the_future_is_flagged(monkeypatch):
     case = run_variant(monkeypatch, text=lambda t: t.replace("Data: 25.10.2026", "Data: 25.12.2027"))
     assert case["status"] == "EXCEPTION_FLAGGED" and "E05" in codes(case)
 
 
-@known_bug("Om1, agents/extraction.py", "sumele fără zecimale („15000 RON”) nu sunt citite -> E05 pe o adresă validă")
 def test_amounts_without_decimals_are_read(monkeypatch):
     case = run_variant(monkeypatch, text=lambda t: t.replace("14.000,00", "14000").replace("1.000,00", "1000")
                        .replace("15.000,00", "15000"))
     assert case["status"] == "AUTO_PROCESSED" and hold(case) == Decimal("5800")
 
 
-@known_bug("Om1, agents/extraction.py", "CUI cu prefix „RO” (firme plătitoare de TVA) nu e extras -> E05 + E01")
 def test_company_cui_with_ro_prefix_is_extracted(monkeypatch):
     def company(bank):
         bank["customers"][0].update(full_name="TECH SOLUTIONS SRL", national_id="18547290", is_legal_entity=True)
@@ -220,9 +207,31 @@ def test_company_cui_with_ro_prefix_is_extracted(monkeypatch):
     assert "E01" not in codes(case) and "E05" not in codes(case)
 
 
-@known_bug("Om1, agents/extraction.py",
-           "la sistare, total_due lipsă e iertat în `missing`, dar nu și în `low` -> orice sistare fără sumă ia E05")
 def test_sistare_without_amount_is_not_invalid(monkeypatch):
     case = run_variant(monkeypatch, base="S7", text=lambda t: "\n".join(
         line for line in t.splitlines() if not line.startswith("Total de recuperat")))
     assert case["status"] == "LIFTED" and codes(case) == []
+
+
+@pytest.mark.parametrize("word,key,ok", [
+    ("ALOCATIA", "ALOCATIE", True), ("ALOCATIEI", "ALOCATIE", True), ("SALARIUL", "SALARIU", True),
+    ("SALARIULUI", "SALARIU", True), ("PENSIA", "PENSIE", True), ("PENSIILE", "PENSIE", True),
+    ("SOMAJUL", "SOMAJ", True), ("PENSIUNE", "PENSIE", False), ("SALARIATA", "SALARIU", False),
+    ("ICCJ", "ICC", False),
+])
+def test_keyword_matches_articulated_forms_only(word, key, ok):
+    from app.modules.popriri.agents.income_classifier import _word_matches
+    assert _word_matches(word, key) is ok
+
+
+def test_hold_is_split_when_current_account_is_too_small(monkeypatch):
+    """5.800 RON de blocat, dar contul curent are doar 1.000: restul se blochează din economii."""
+    def two_accounts(bank):
+        bank["accounts"][0]["current_balance"] = 1000.0
+        bank["accounts"].append({"iban": "RO09BCYP0000001234567890", "customer_id": "CUST-001",
+                                 "account_type": "ECONOMII", "currency": "RON",
+                                 "opening_balance": 0.0, "current_balance": 9000.0})
+    case = run_variant(monkeypatch, bank=two_accounts)
+    holds = case["decision"]["hold_instructions"]
+    assert [h["amount"] for h in holds] == [1000.0, float(hold(case) - 1000)]
+    assert sum(h["amount"] for h in holds) == float(hold(case))

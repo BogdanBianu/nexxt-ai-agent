@@ -127,6 +127,11 @@ export function SeizureFacts({ data }: { data: Case }) {
         ) : (
           <>
             <Fact label="Fel măsură">{t.label}</Fact>
+            {o?.legal_basis && (
+              <Fact label="Temei legal" wide>
+                <span className="font-medium">{o.legal_basis}</span>
+              </Fact>
+            )}
             <Fact label={t.creditor} wide>
               {o?.creditor_name}
             </Fact>
