@@ -19,11 +19,11 @@ from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 
 from app import config
 from app.contracts import (
-    ActiveGarnishment, AgentName, AiTelemetry, AgentStatus, AuditEntry, BankSnapshot, DocType, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
+    ActiveGarnishment, AgentName, AiTelemetry, CaseAnswer, CaseQuestion, AgentStatus, AuditEntry, BankSnapshot, DocType, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
     CustomerStatus,
     IncomingDocument, LlmUsage, ModuleInfo, PlatformMetrics, ReviewAction, RuleBookInfo, Scenario, ScenarioInfo,
 )
-from app.core import telemetry
+from app.core import copilot, telemetry
 from app.core.events import EventSink, now
 from app.core.modules import module_for, registry
 from app.core.pdf_text import bytes_to_text
@@ -345,6 +345,21 @@ def get_case_audit(case_id: str):
                            action="HITL_REVIEW", details=r.model_dump(mode="json", exclude={"timestamp"}))
                 for r in case.reviews]
     return sorted(entries, key=lambda e: e.timestamp)
+
+
+@app.post("/api/cases/{case_id}/ask", response_model=CaseAnswer)
+def ask_case(case_id: str, body: CaseQuestion):
+    """Agentul „Explain & Cite”: răspunde la o întrebare liberă despre dosar, citând regulile (cu articolul
+    de lege), excepțiile și tranzacțiile din dosar. Întrebarea și răspunsul intră în audit trail."""
+    case = get_case(case_id)
+    with telemetry.track(case.llm_usage):          # și întrebările intră în costul AI al dosarului
+        text, citations, method = copilot.answer(case, body.question)
+    asked = now()
+    AUDIT_LOG.setdefault(case_id, []).append(AuditEntry(
+        timestamp=asked, actor=f"user:{body.asked_by or 'anonim'}", action="COPILOT_QUESTION",
+        details={"question": body.question, "method": method, "citations": [c.ref for c in citations]}))
+    return CaseAnswer(case_id=case_id, question=body.question, answer=text, citations=citations,
+                      method=method, answered_at=asked)
 
 
 @app.get("/api/cases/{case_id}/response-pdf")

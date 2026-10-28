@@ -1,5 +1,6 @@
 """Corpurile cererilor și răspunsurilor HTTP care nu sunt deja în alte contracte."""
-from typing import Any
+from datetime import datetime
+from typing import Any, Literal
 
 from pydantic import Field
 
@@ -56,6 +57,31 @@ class RuleBookInfo(Contract):
     parameters: dict[str, Any] = Field(default_factory=dict)
     periodic_categories: list[IncomeCategory] = Field(default_factory=list)
     rules: list[RuleInfo] = Field(default_factory=list)
+
+
+class CaseQuestion(Contract):
+    """Corpul `POST /api/cases/{case_id}/ask`: întrebare liberă despre dosar (ofițer HITL sau juriu)."""
+    question: str = Field(min_length=3, max_length=1000)
+    asked_by: str | None = None
+
+
+class Citation(Contract):
+    """O sursă din dosar pe care se bazează răspunsul."""
+    kind: Literal["RULE", "EXCEPTION", "TRANSACTION"]
+    ref: str                                    # "R-WAGE-04" / "E06" / "TX-1001"
+    legal_source: str | None = None             # temeiul legal exact (doar la reguli)
+    text: str
+    tx_ids: list[str] = Field(default_factory=list)
+
+
+class CaseAnswer(Contract):
+    """Răspunsul agentului „Explain & Cite”."""
+    case_id: str
+    question: str
+    answer: str
+    citations: list[Citation] = Field(default_factory=list)
+    method: Literal["LLM", "DETERMINISTIC"]
+    answered_at: datetime
 
 
 class AiTelemetry(Contract):

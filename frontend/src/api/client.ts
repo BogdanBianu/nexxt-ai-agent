@@ -3,6 +3,8 @@ import type {
   AgentEvent,
   AuditEntry,
   Case,
+  CaseAnswer,
+  CaseQuestion,
   CaseSummary,
   ModuleInfo,
   ReviewAction,
@@ -39,6 +41,12 @@ export const api = {
     json<Case>(`/api/cases/${caseId}/review`, {
       method: "POST",
       body: JSON.stringify(review),
+    }),
+  // agentul „Explain & Cite”: întrebare liberă despre dosar, răspuns cu temeiul legal și tranzacțiile citate
+  askCase: (caseId: string, body: CaseQuestion) =>
+    json<CaseAnswer>(`/api/cases/${caseId}/ask`, {
+      method: "POST",
+      body: JSON.stringify(body),
     }),
 };
 
