@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Check, LoaderCircle, OctagonAlert, Undo2 } from "lucide-react";
 import { api } from "../api/client";
 import type { Case, ClassifiedTransaction, ExceptionFlag, IncomeCategory, TxOverride } from "../types/contracts";
-import { CATEGORY_LABEL, EXCEPTION_LABEL, formatDate, formatRon } from "../lib/ui";
+import { CATEGORY_LABEL, EXCEPTION_LABEL, formatDate, formatRon, humanize } from "../lib/ui";
 
 // Excepții pe care backend-ul nu le poate accepta: dosarul trebuie returnat emitentului
 const NOT_APPROVABLE: Record<string, string> = {
@@ -87,7 +87,7 @@ function ExceptionDecision({
         <OctagonAlert size={17} className="text-danger" aria-hidden />
         {label}
       </div>
-      <p className="mt-1 text-sm leading-relaxed">{e.message}</p>
+      <p className="mt-1 text-sm leading-relaxed">{humanize(e.message)}</p>
 
       {txs.length > 0 && (
         <div className="mt-4 space-y-2">

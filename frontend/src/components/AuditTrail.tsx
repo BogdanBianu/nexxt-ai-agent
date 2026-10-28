@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Bot, Download, UserRound } from "lucide-react";
 import { api } from "../api/client";
 import type { AgentName, AuditEntry, Case, IncomeCategory } from "../types/contracts";
-import { CATEGORY_LABEL, EXCEPTION_LABEL, formatTime, PIPELINE } from "../lib/ui";
+import { CATEGORY_LABEL, EXCEPTION_LABEL, formatTime, humanize, PIPELINE } from "../lib/ui";
 
 const AGENT_LABEL = Object.fromEntries(PIPELINE.map((p) => [p.agent, p.label])) as Record<AgentName, string>;
 
@@ -38,8 +38,8 @@ function describe(e: AuditEntry) {
     return `${parts.join("; ")}${typeof d.note === "string" && d.note ? `. Justificare: „${d.note}”` : ""}`;
   }
   if (e.action === "EXCEPTION_RAISED" && typeof d.code === "string")
-    return `${EXCEPTION_LABEL[d.code] ?? d.code}: ${typeof d.message === "string" ? d.message : ""}`;
-  if (typeof d.message === "string") return d.message;
+    return `${EXCEPTION_LABEL[d.code] ?? d.code}: ${typeof d.message === "string" ? humanize(d.message) : ""}`;
+  if (typeof d.message === "string") return humanize(d.message);
   if (e.action === "RULE_APPLIED" && typeof d.legal_source === "string") return `${d.rule_id ?? ""} ${d.legal_source}`.trim();
   if (typeof d.note === "string") return d.note;
   return Object.keys(d).length ? JSON.stringify(d) : "";

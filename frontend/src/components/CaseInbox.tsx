@@ -3,8 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, CircleCheck, ChevronDown, OctagonAlert, Plus, Search, X } from "lucide-react";
 import { api } from "../api/client";
 import type { Case, CaseSummary, ScenarioInfo } from "../types/contracts";
+import { ServerDown } from "./ServerDown";
 import { UploadDocument } from "./UploadDocument";
-import { dayLabel, DOC_LABEL, EXCEPTION_LABEL, formatAgo, formatRon, formatTime, STATUS_STYLE, type StatusTone } from "../lib/ui";
+import { caseTitle, dayLabel, DOC_LABEL, EXCEPTION_LABEL, formatAgo, formatRon, formatTime, STATUS_STYLE, type StatusTone } from "../lib/ui";
 
 interface Props {
   onOpen: (caseId: string, fresh: boolean) => void;
@@ -38,7 +39,10 @@ function ScenarioMenu({ onPick, busy }: { onPick: (id: string) => void; busy: bo
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (!scenarios.length) api.listScenarios().then(setScenarios).catch(() => setScenarios([]));
+          setOpen((o) => !o);
+        }}
         disabled={busy}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -147,6 +151,7 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
       .then((c) => {
         setCases(c);
         setLoaded(true);
+        setError(null);
       })
       .catch((e: Error) => setError(e.message));
   }, []);
@@ -155,7 +160,7 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
 
   // Pentru dosarele blocate avem nevoie de motiv și emitent, care nu sunt în sumar
   useEffect(() => {
-    const missing = cases.filter((c) => isReview(c) && !details[c.case_id]);
+    const missing = cases.filter((c) => (isReview(c) || !c.debtor_name) && !details[c.case_id]);
     if (!missing.length) return;
     Promise.all(missing.map((c) => api.getCase(c.case_id).catch(() => null))).then((list) =>
       setDetails((d) => {
@@ -211,9 +216,11 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
         </div>
       </div>
 
-      {error && (
+      {error && !loaded && <ServerDown onRetry={reload} />}
+
+      {error && loaded && (
         <p role="alert" className="mt-6 rounded-md border border-danger/40 bg-danger-soft px-4 py-3 text-sm font-semibold text-danger-ink">
-          Serverul nu a răspuns ({error}). Verifică dacă backend-ul rulează pe portul 8000.
+          Acțiunea nu a reușit: {error}
         </p>
       )}
 
@@ -251,145 +258,150 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
         </section>
       )}
 
-      <div className="mt-12 flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
-          <h2 className="display text-xl">Toate dosarele</h2>
-          <div role="tablist" aria-label="Filtru status" className="flex gap-5">
-            {FILTERS.map((f) => {
-              const n = cases.filter(f.test).length;
-              const on = f.id === filter;
-              return (
-                <button
-                  key={f.id}
-                  role="tab"
-                  aria-selected={on}
-                  onClick={() => setFilter(f.id)}
-                  className={`flex items-center gap-1.5 border-b-2 pb-1 text-sm font-semibold transition-colors duration-150 ${
-                    on ? "border-ink" : "border-transparent text-muted hover:text-ink"
-                  }`}
-                >
-                  {f.label}
-                  <span className="text-muted">{n}</span>
-                </button>
-              );
-            })}
+      {(loaded || !error) && (
+        <>
+          <div className="mt-12 flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+              <h2 className="display text-xl">Toate dosarele</h2>
+              <div role="tablist" aria-label="Filtru status" className="flex gap-5">
+                {FILTERS.map((f) => {
+                  const n = cases.filter(f.test).length;
+                  const on = f.id === filter;
+                  return (
+                    <button
+                      key={f.id}
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => setFilter(f.id)}
+                      className={`flex items-center gap-1.5 border-b-2 pb-1 text-sm font-semibold transition-colors duration-150 ${
+                        on ? "border-ink" : "border-transparent text-muted hover:text-ink"
+                      }`}
+                    >
+                      {f.label}
+                      <span className="text-muted">{n}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <label className="relative flex w-full items-center sm:w-72">
+              <Search size={16} className="pointer-events-none absolute left-3 text-muted" aria-hidden />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Caută debitor sau nr. dosar"
+                aria-label="Caută debitor sau număr dosar"
+                className="h-10 w-full rounded-md bg-paper pr-3 pl-9 text-sm ring-1 ring-line-strong outline-none placeholder:text-muted focus:ring-2 focus:ring-ink"
+              />
+            </label>
           </div>
-        </div>
 
-        <label className="relative flex w-full items-center sm:w-72">
-          <Search size={16} className="pointer-events-none absolute left-3 text-muted" aria-hidden />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Caută debitor sau nr. dosar"
-            aria-label="Caută debitor sau număr dosar"
-            className="h-10 w-full rounded-md bg-paper pr-3 pl-9 text-sm ring-1 ring-line-strong outline-none placeholder:text-muted focus:ring-2 focus:ring-ink"
-          />
-        </label>
-      </div>
-
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm">
-          <thead>
-            <tr className="border-b border-ink text-left text-xs font-semibold text-muted">
-              <th className="py-2.5 pr-4">Debitor</th>
-              <th className="px-4 py-2.5">Nr. dosar</th>
-              <th className="px-4 py-2.5">Status</th>
-              <th className="px-4 py-2.5 text-right">De indisponibilizat</th>
-              <th className="px-4 py-2.5">Primit</th>
-              <th className="w-24" />
-            </tr>
-          </thead>
-          {loaded && rows.length === 0 && (
-            <tbody>
-              <tr>
-                <td colSpan={6} className="py-14 text-center">
-                  {cases.length === 0 ? (
-                    <>
-                      <p className="font-semibold">Nicio adresă de poprire primită</p>
-                      <p className="mt-1 text-muted">Folosește „Simulează adresă” ca să trimiți un scenariu de test prin agenți.</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-semibold">Niciun dosar nu corespunde filtrului</p>
-                      <button
-                        onClick={() => {
-                          setFilter("ALL");
-                          setQuery("");
-                        }}
-                        className="mt-2 inline-flex items-center gap-1 text-sm font-semibold underline underline-offset-4"
-                      >
-                        <X size={14} aria-hidden />
-                        Șterge filtrele
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            </tbody>
-          )}
-          {groups.map((g) => (
-            <tbody key={g.label}>
-              <tr>
-                <th colSpan={6} scope="rowgroup" className="pt-6 pb-2 text-left text-xs font-semibold first-letter:uppercase">
-                  {g.label}
-                  <span className="ml-2 font-normal text-muted">{g.items.length}</span>
-                </th>
-              </tr>
-              {g.items.map((c) => {
-                const st = STATUS_STYLE[c.status];
-                const problem = st.tone === "danger";
-                const reason = problem ? problemOf(details[c.case_id]) : null;
-                return (
-                  <tr
-                    key={c.case_id}
-                    onClick={() => onOpen(c.case_id, false)}
-                    className="group cursor-pointer border-t border-line transition-colors duration-150 hover:bg-canvas"
-                  >
-                    <td className="py-3.5 pr-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpen(c.case_id, false);
-                        }}
-                        className="text-left font-semibold"
-                      >
-                        {c.debtor_name ?? "Debitor neidentificat"}
-                      </button>
-                      <div className="text-xs text-muted">
-                        {DOC_LABEL[c.doc_type]}
-                        {c.scenario_id ? `, scenariu ${c.scenario_id}` : ""}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 font-mono text-[13px]">{c.case_number ?? "—"}</td>
-                    <td className="px-4 py-3.5">
-                      <span className={`flex items-center gap-2 font-medium ${problem ? "text-danger-ink" : ""}`}>
-                        <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[st.tone]}`} aria-hidden />
-                        {st.label}
-                      </span>
-                      {reason && <div className="pl-4 text-xs text-danger-ink/80">{reason}</div>}
-                    </td>
-                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                      {problem ? <span className="text-muted">Blocat</span> : <span className="font-semibold">{c.amount_to_hold != null ? formatRon(c.amount_to_hold) : "—"}</span>}
-                    </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      {formatAgo(c.created_at)}
-                      <div className="text-xs text-muted">{formatTime(c.created_at).slice(0, 5)}</div>
-                    </td>
-                    <td className="pr-1 text-right">
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                        Deschide
-                        <ArrowRight size={14} aria-hidden />
-                      </span>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[820px] text-sm">
+              <thead>
+                <tr className="border-b border-ink text-left text-xs font-semibold text-muted">
+                  <th className="py-2.5 pr-4">Debitor</th>
+                  <th className="px-4 py-2.5">Nr. dosar</th>
+                  <th className="px-4 py-2.5">Status</th>
+                  <th className="px-4 py-2.5 text-right">De indisponibilizat</th>
+                  <th className="px-4 py-2.5">Primit</th>
+                  <th className="w-24" />
+                </tr>
+              </thead>
+              {loaded && rows.length === 0 && (
+                <tbody>
+                  <tr>
+                    <td colSpan={6} className="py-14 text-center">
+                      {cases.length === 0 ? (
+                        <>
+                          <p className="font-semibold">Nicio adresă de poprire primită</p>
+                          <p className="mt-1 text-muted">Folosește „Simulează adresă” ca să trimiți un scenariu de test prin agenți.</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-semibold">Niciun dosar nu corespunde filtrului</p>
+                          <button
+                            onClick={() => {
+                              setFilter("ALL");
+                              setQuery("");
+                            }}
+                            className="mt-2 inline-flex items-center gap-1 text-sm font-semibold underline underline-offset-4"
+                          >
+                            <X size={14} aria-hidden />
+                            Șterge filtrele
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          ))}
-        </table>
-      </div>
+                </tbody>
+              )}
+              {groups.map((g) => (
+                <tbody key={g.label}>
+                  <tr>
+                    <th colSpan={6} scope="rowgroup" className="pt-6 pb-2 text-left text-xs font-semibold first-letter:uppercase">
+                      {g.label}
+                      <span className="ml-2 font-normal text-muted">{g.items.length}</span>
+                    </th>
+                  </tr>
+                  {g.items.map((c) => {
+                    const st = STATUS_STYLE[c.status];
+                    const problem = st.tone === "danger";
+                    const reason = problem ? problemOf(details[c.case_id]) : null;
+                    return (
+                      <tr
+                        key={c.case_id}
+                        onClick={() => onOpen(c.case_id, false)}
+                        className="group cursor-pointer border-t border-line transition-colors duration-150 hover:bg-canvas"
+                      >
+                        <td className="py-3.5 pr-4">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpen(c.case_id, false);
+                            }}
+                            className="text-left font-semibold"
+                          >
+                            {c.debtor_name ?? (details[c.case_id] ? caseTitle(details[c.case_id]) : "…")}
+                          </button>
+                          <div className="text-xs text-muted">
+                            {DOC_LABEL[c.doc_type]}
+                            {c.scenario_id ? `, scenariu ${c.scenario_id}` : ""}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 font-mono text-[13px]">{c.case_number ?? "—"}</td>
+                        <td className="px-4 py-3.5">
+                          <span className={`flex items-center gap-2 font-medium ${problem ? "text-danger-ink" : ""}`}>
+                            <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[st.tone]}`} aria-hidden />
+                            {st.label}
+                          </span>
+                          {reason && <div className="pl-4 text-xs text-danger-ink/80">{reason}</div>}
+                        </td>
+                        <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                          {problem ? <span className="text-muted">Blocat</span> : <span className="font-semibold">{c.amount_to_hold != null ? formatRon(c.amount_to_hold) : "—"}</span>}
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {formatAgo(c.created_at)}
+                          <div className="text-xs text-muted">{formatTime(c.created_at).slice(0, 5)}</div>
+                        </td>
+                        <td className="pr-1 text-right">
+                          <span className="inline-flex items-center gap-1 text-sm font-semibold opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                            Deschide
+                            <ArrowRight size={14} aria-hidden />
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              ))}
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }
+
