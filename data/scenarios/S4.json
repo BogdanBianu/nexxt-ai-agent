@@ -1,0 +1,87 @@
+{
+  "scenario_id": "S4",
+  "title": "Eludare: Salariu deghizat în Diurnă după poprire (Momentul WOW)",
+  "description": "Angajatorul a plătit 6.000 RON salariu în August și Septembrie, dar în Octombrie (după poprire) virează 6.000 RON cu descrierea 'Diurna delegatie' și niciun salariu. Agentul de anomalii ridică excepția blocantă E06. După ce ofițerul o reclasifică în SALARIU, se blochează 2.000 RON.",
+  "document": {
+    "document_id": "DOC-S4",
+    "filename": "adresa_infiintare_poprire_BEJ_4455_2026.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC MARINESCU VLAD\nDosarul de executare nr. 4455/2026\nData: 10.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn dosarul de executare nr. 4455/2026 dispun ÎNFIINȚAREA POPRIRII asupra conturilor:\nDebitor: DUMITRU ALEXANDRU, CNP: 1850615400016\nCreditor: BANCA COMERCIALĂ CREDIT S.A.\nNatura creanței: Comercială\nDebit principal: 8.500,00 RON\nCheltuieli de executare: 500,00 RON\nTotal de recuperat: 9.000,00 RON\n\nCont consemnare IBAN: RO49AAAA1B31007593840000.\nSemnătură și ștampilă L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-004",
+        "full_name": "DUMITRU ALEXANDRU",
+        "national_id": "1850615400016",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Unirii nr. 22, Cluj-Napoca"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO49AAAA1B31007593840000",
+        "customer_id": "CUST-004",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0.0,
+        "current_balance": 6000.0
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S4-08",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-08-14",
+        "direction": "CREDIT",
+        "amount": 6000.0,
+        "counterparty_name": "SC CONSTRUCT PRO SRL",
+        "counterparty_iban": null,
+        "description": "Salariu luna Iulie"
+      },
+      {
+        "tx_id": "TX-S4-09",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-09-14",
+        "direction": "CREDIT",
+        "amount": 6000.0,
+        "counterparty_name": "SC CONSTRUCT PRO SRL",
+        "counterparty_iban": null,
+        "description": "Salariu luna August"
+      },
+      {
+        "tx_id": "TX-S4-10",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 6000.0,
+        "counterparty_name": "SC CONSTRUCT PRO SRL",
+        "counterparty_iban": null,
+        "description": "Diurna delegatie externa"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "EXCEPTION_FLAGGED",
+    "amount_to_hold": 0.0,
+    "exception_codes": ["E06"],
+    "amount_after_review": 2000.0
+  },
+  "demo_review": {
+    "reviewer": "ofiter.juridic@raiffeisen.ro",
+    "overrides": [
+      {
+        "tx_id": "TX-S4-10",
+        "category": "SALARIU",
+        "note": "Aceeași sumă și același angajator ca salariul din lunile trecute."
+      }
+    ],
+    "resolve_codes": ["E06"],
+    "note": "Reclasificat ca salariu după verificarea istoricului."
+  }
+}

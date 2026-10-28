@@ -1,0 +1,59 @@
+# Registrul de reguli pentru popriri. Proprietar: Om2.
+# ATENȚIE: rezumat de lucru. Trebuie validat de un jurist înainte de pitch.
+# Fiecare regulă are sursa legală; motorul o citează în decizie.
+version: "2026.10"
+
+parameters:
+  # Salariul minim net pe economie (RON). Actualizați cu valoarea în vigoare.
+  salariu_minim_net: 2574
+  # Plafonul cumulat din venitul periodic când există mai multe popriri
+  cumulative_cap_on_periodic_income: 0.5
+
+periodic_categories: [SALARIU, PENSIE]
+
+rules:
+  - id: R-EXEMPT-01
+    legal_source: "CPC art. 729 (sume neurmăribile)"
+    description: "Alocații, indemnizații pentru copii, ajutoare sociale și diurne nu pot fi urmărite."
+    categories: [ALOCATIE, INDEMNIZATIE_COPIL, DIURNA, AJUTOR_SOCIAL]
+    quota: 0
+
+  - id: R-SPECIAL-02
+    legal_source: "CPC art. 729 alin. (2)"
+    description: "Indemnizația pentru incapacitate temporară poate fi urmărită doar pentru obligații de întreținere."
+    categories: [INDEMNIZATIE_BOALA]
+    quota: 0
+    quota_if_creditor:
+      INTRETINERE: 0.5
+
+  - id: R-WAGE-03
+    legal_source: "CPC art. 729 alin. (1) lit. a)"
+    description: "Din salariu/pensie se poate urmări până la 1/2 pentru obligații de întreținere."
+    categories: [SALARIU, PENSIE]
+    creditor_types: [INTRETINERE]
+    quota: 0.5
+
+  - id: R-WAGE-04
+    legal_source: "CPC art. 729 alin. (1) lit. b)"
+    description: "Din salariu/pensie se poate urmări până la 1/3 pentru orice alte datorii."
+    categories: [SALARIU, PENSIE]
+    creditor_types: [COMERCIAL, FISCAL]
+    quota: 0.3333333333
+
+  - id: R-CONC-05
+    legal_source: "CPC art. 729 alin. (3)"
+    description: "Cu mai multe urmăriri pe același venit, totalul nu poate depăși 1/2 din venitul net."
+
+  - id: R-MIN-06
+    legal_source: "CPC art. 729 alin. (4)"
+    description: "Sub salariul minim net, se urmărește doar partea care depășește jumătate din acesta."
+
+  - id: R-OTHER-07
+    legal_source: "CPC art. 781"
+    description: "Celelalte sume din cont (transferuri, chirii, economii, sold anterior) sunt urmăribile integral."
+    categories: [ALT_VENIT, SOLD_ANTERIOR]
+    quota: 1
+
+  - id: R-CAP-08
+    legal_source: "CPC art. 781"
+    description: "Suma indisponibilizată nu depășește totalul datorat din adresa de poprire."

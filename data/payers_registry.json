@@ -1,0 +1,32 @@
+[
+  {
+    "match": "AGENTIA PENTRU PLATI SI INSPECTIE SOCIALA",
+    "iban": "RO88TREZ70024680120XXXXX",
+    "default_category": "ALOCATIE",
+    "label": "ANPIS / AJPIS — Alocație de stat / Indemnizație"
+  },
+  {
+    "match": "AJPIS",
+    "iban": null,
+    "default_category": "ALOCATIE",
+    "label": "Agenția Județeană pentru Plăți și Inspecție Socială"
+  },
+  {
+    "match": "CASA NATIONALA DE PENSII",
+    "iban": null,
+    "default_category": "PENSIE",
+    "label": "Casa Națională de Pensii Publice"
+  },
+  {
+    "match": "CASA JUDETEANA DE PENSII",
+    "iban": null,
+    "default_category": "PENSIE",
+    "label": "Casa Județeană de Pensii"
+  },
+  {
+    "match": "PRIMARIA",
+    "iban": null,
+    "default_category": "AJUTOR_SOCIAL",
+    "label": "Primărie — Ajutor social / Venit minim de incluziune"
+  }
+]

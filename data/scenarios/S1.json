@@ -1,0 +1,106 @@
+{
+  "scenario_id": "S1",
+  "title": "Salariat cu alocație copil — Poprire comercială curată",
+  "description": "Cazul de referință: salariat cu 6.000 RON salariu, 292 RON alocație de stat, 1.500 RON diurnă legală, 800 RON transfer P2P și 3.000 RON sold anterior. Datorie totală 15.000 RON. Sistemul protejează alocația și diurna, oprește 1/3 din salariu (2.000 RON) + 100% din transfer și sold (3.800 RON) = 5.800 RON.",
+  "document": {
+    "document_id": "DOC-S1",
+    "filename": "adresa_infiintare_poprire_BEJ_1234_2026.pdf",
+    "received_at": "2026-10-28T09:30:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC POPESCU ION\nDosarul de executare nr. 1234/2026\nData: 25.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nSubsemnatul POPESCU ION, executor judecătoresc, în baza titlului executoriu din dosarul de executare nr. 1234/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: IONESCU MIHAI, CNP: 1850615400016\nCreditor: ALPHA LEASING IFN S.A.\nNatura creanței: Comercială\nDebit principal: 14.000,00 RON\nCheltuieli de executare: 1.000,00 RON\nTotal de recuperat: 15.000,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO49AAAA1B31007593840000.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-001",
+        "full_name": "IONESCU MIHAI",
+        "national_id": "1850615400016",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Primăverii nr. 10, București"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO49AAAA1B31007593840000",
+        "customer_id": "CUST-001",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 3000.0,
+        "current_balance": 11592.0
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-0801",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-08-15",
+        "direction": "CREDIT",
+        "amount": 6000.0,
+        "counterparty_name": "SC TECH SOLUTIONS SRL",
+        "counterparty_iban": null,
+        "description": "Plata salariu luna Iulie"
+      },
+      {
+        "tx_id": "TX-0901",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-09-15",
+        "direction": "CREDIT",
+        "amount": 6000.0,
+        "counterparty_name": "SC TECH SOLUTIONS SRL",
+        "counterparty_iban": null,
+        "description": "Plata salariu luna August"
+      },
+      {
+        "tx_id": "TX-1001",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 6000.0,
+        "counterparty_name": "SC TECH SOLUTIONS SRL",
+        "counterparty_iban": null,
+        "description": "Plata salariu luna Septembrie"
+      },
+      {
+        "tx_id": "TX-1002",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-18",
+        "direction": "CREDIT",
+        "amount": 292.0,
+        "counterparty_name": "AGENTIA PENTRU PLATI SI INSPECTIE SOCIALA",
+        "counterparty_iban": "RO88TREZ70024680120XXXXX",
+        "description": "Alocatie de stat copil"
+      },
+      {
+        "tx_id": "TX-1003",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-20",
+        "direction": "CREDIT",
+        "amount": 1500.0,
+        "counterparty_name": "SC TECH SOLUTIONS SRL",
+        "counterparty_iban": null,
+        "description": "Diurna deplasare externa delegatie"
+      },
+      {
+        "tx_id": "TX-1004",
+        "iban": "RO49AAAA1B31007593840000",
+        "booking_date": "2026-10-22",
+        "direction": "CREDIT",
+        "amount": 800.0,
+        "counterparty_name": "VASILESCU DAN",
+        "counterparty_iban": null,
+        "description": "Transfer contravalori"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 5800.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}
