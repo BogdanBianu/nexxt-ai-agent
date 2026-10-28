@@ -76,6 +76,7 @@ export const DOC_LABEL: Record<DocType, string> = {
   SECHESTRU_RIDICARE: "Ridicare sechestru",
   NOTIFICARE_INSOLVENTA: "Notificare insolvență",
   CERTIFICAT_MOSTENITOR: "Certificat de moștenitor",
+  CERERE_GDPR: "Cerere GDPR",
   NECUNOSCUT: "Necunoscut",
 };
 

@@ -1,0 +1,55 @@
+{
+  "scenario_id": "S26",
+  "title": "Cerere de ștergere date (Art. 17 GDPR) — Conflict cu obligația legală AML (Legea 129/2019)",
+  "description": "Client solicită ștergerea definitivă a tuturor datelor bancare („dreptul de a fi uitat”). Modulul GDPR aplică regula R-GDPR-AML-17: refuz parțial motivat legal (datele tranzacționale și KYC se păstrează obligatoriu 5 ani conform Legii AML), dar aprobă ștergerea datelor de marketing din CRM.",
+  "document": {
+    "document_id": "DOC-S26",
+    "filename": "cerere_dreptul_de_a_fi_uitat_art17.txt",
+    "received_at": "2026-10-28T14:30:00Z",
+    "content_type": "text/plain",
+    "text": "CERERE PRIVIND ȘTERGEREA DATELOR („DREPTUL DE A FI UITAT” - Art. 17 GDPR)\nNr. înregistrare: GDPR-2026-789\nData: 28.10.2026\n\nSubsemnatul POPESCU ION, CNP: 1850615400011, solicit în baza Art. 17 din Regulamentul (UE) 2016/679 ștergerea completă a datelor mele din evidențele băncii, istoricul tranzacțional și bazele de date comerciale.\nSemnătură transmisă prin Smart Mobile.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-GDPR-01",
+        "full_name": "POPESCU ION",
+        "national_id": "1850615400011",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Mihai Eminescu nr. 12, București"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO49RZBR0000060012345678",
+        "customer_id": "CUST-GDPR-01",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 2000.0,
+        "current_balance": 8500.0
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-GDPR-1",
+        "iban": "RO49RZBR0000060012345678",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 6500.0,
+        "counterparty_name": "ANGAPROD SRL",
+        "description": "Salariu luna septembrie"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "CERERE_GDPR",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 0.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

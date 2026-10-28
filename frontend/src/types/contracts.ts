@@ -11,9 +11,10 @@ export type DocType =
   | "SECHESTRU_RIDICARE"
   | "NOTIFICARE_INSOLVENTA"
   | "CERTIFICAT_MOSTENITOR"
+  | "CERERE_GDPR"
   | "NECUNOSCUT";
 
-export type IssuerType = "EXECUTOR" | "ANAF" | "ORGAN_FISCAL_LOCAL" | "POLITIE" | "PARCHET" | "ALTUL";
+export type IssuerType = "EXECUTOR" | "ANAF" | "ORGAN_FISCAL_LOCAL" | "POLITIE" | "PARCHET" | "ANSPDCP" | "PERSOANA_FIZICA" | "ALTUL";
 export type CreditorType = "INTRETINERE" | "FISCAL" | "COMERCIAL";
 
 export type IncomeCategory =

@@ -51,6 +51,15 @@ _KEYWORDS: list[tuple[DocType, list[str]]] = [
     (DocType.CERERE_INFORMATII, [
         "SOLICITARE DE INFORMATII", "CERERE DE INFORMATII", "COMUNICARE RULAJ CONT",
     ]),
+    # GDPR ultimul: multe adrese oficiale au în subsol „date prelucrate conform Regulamentului (UE) 2016/679”,
+    # deci recunoaștem doar formulările unei cereri, nu simpla mențiune a regulamentului
+    (DocType.CERERE_GDPR, [
+        "DREPTUL DE ACCES", "DREPTULUI DE ACCES", "DREPTUL LA ACCES", "DREPTUL LA STERGERE", "DREPTUL DE A FI UITAT",
+        "DREPTUL LA OPOZITIE", "DREPTUL DE OPOZITIE", "DREPTUL LA PORTABILITATE", "STERGEREA DATELOR", "STERGERE A DATELOR",
+        "ART. 15 GDPR", "ART. 17 GDPR", "ART. 20 GDPR", "ART. 21 GDPR",
+        "ART. 15 DIN REGULAMENT", "ART. 17 DIN REGULAMENT", "ART. 21 DIN REGULAMENT",
+        "CERERE GDPR", "SOLICITARE GDPR", "AUTORITATEA NATIONALA DE SUPRAVEGHERE A PRELUCRARII DATELOR",
+    ]),
 ]
 
 _TARGET_MODULE = {
@@ -59,6 +68,7 @@ _TARGET_MODULE = {
     DocType.SECHESTRU_RIDICARE: "sechestre (Sechestre asigurătorii)",
     DocType.NOTIFICARE_INSOLVENTA: "insolventa (Insolvență și succesiuni)",
     DocType.CERTIFICAT_MOSTENITOR: "insolventa (Insolvență și succesiuni)",
+    DocType.CERERE_GDPR: "gdpr (Cereri GDPR)",
 }
 
 _SYSTEM = """Ești ofițerul de triaj (Intake Router) din departamentul Operațiuni Juridice al Raiffeisen Bank România.
@@ -72,6 +82,7 @@ Clasifici documentul primit într-una din categoriile:
 - SECHESTRU_RIDICARE: decizie / încheiere de ridicare a măsurii asigurătorii (a sechestrului).
 - NOTIFICARE_INSOLVENTA: notificare de la tribunal / administrator / lichidator judiciar despre deschiderea procedurii insolvenței sau a falimentului (Legea 85/2014).
 - CERTIFICAT_MOSTENITOR: certificat de moștenitor emis de notarul public după decesul unui client (succesiune).
+- CERERE_GDPR: cerere privind protecția datelor (Regulamentul UE 2016/679 - drept de acces Art. 15, ștergere Art. 17, opoziție marketing Art. 21) sau solicitare ANSPDCP. O simplă mențiune a regulamentului în subsolul altui document NU înseamnă cerere GDPR.
 - NECUNOSCUT: documentul nu se încadrează în niciuna din categoriile de mai sus.
 
 Returnează JSON cu formatul:

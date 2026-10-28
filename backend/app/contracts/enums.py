@@ -17,6 +17,7 @@ class DocType(str, Enum):
     SECHESTRU_RIDICARE = "SECHESTRU_RIDICARE"        # ridicarea măsurii asigurătorii -> modulul sechestre
     NOTIFICARE_INSOLVENTA = "NOTIFICARE_INSOLVENTA"  # deschiderea procedurii (Legea 85/2014) -> modulul insolventa
     CERTIFICAT_MOSTENITOR = "CERTIFICAT_MOSTENITOR"  # certificat de moștenitor (notar) -> modulul insolventa
+    CERERE_GDPR = "CERERE_GDPR"                  # Drepturi GDPR (Art. 15-22) / Solicitări ANSPDCP
     NECUNOSCUT = "NECUNOSCUT"
 
 
@@ -26,6 +27,8 @@ class IssuerType(str, Enum):
     ORGAN_FISCAL_LOCAL = "ORGAN_FISCAL_LOCAL"
     POLITIE = "POLITIE"
     PARCHET = "PARCHET"
+    ANSPDCP = "ANSPDCP"                          # Autoritatea de Supraveghere Prelucrare Date
+    PERSOANA_FIZICA = "PERSOANA_FIZICA"          # Solicitant persoană vizată
     ALTUL = "ALTUL"
 
 
