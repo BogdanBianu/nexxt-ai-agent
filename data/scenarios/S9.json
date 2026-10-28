@@ -1,86 +1,66 @@
 {
   "scenario_id": "S9",
-  "title": "Sechestru asigurător fiscal ANAF DGAF — Formular 504 (Art. 213 CPF)",
-  "description": "Decizie oficială de instituire a măsurilor asigurătorii (Formular 504 DGAF) emisă în temeiul art. 213 Cod procedură fiscală până la plafonul de 25.000 RON. Contribuabilul are 8.000 RON economii anterioare, 7.200 RON salariu net, 292 RON alocație de stat și 300 RON bursă școlară. Sistemul exceptează alocația și bursa (592 RON), protejează 2/3 din salariu (4.800 RON) și îngheață 1/3 din salariu (2.400 RON) + 100% din economii (8.000 RON) = 10.400 RON.",
+  "title": "Pensionar cu pensie sub salariul minim — protecția venitului minim",
+  "description": "Pensie de 2.000 RON (sub salariul minim net de 2.574 RON). Art. 729 alin. (4): se urmărește 1/3 doar din partea care depășește jumătate din salariul minim (1.287 RON) → 237,67 RON, nu 666,67 RON.",
   "document": {
-    "document_id": "DOC-SECH-504-4510",
-    "filename": "decizie_masuri_asiguratorii_ANAF_DGAF_4510_2026.pdf",
-    "received_at": "2026-10-28T14:00:00Z",
+    "document_id": "DOC-S9",
+    "filename": "adresa_S9.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
     "content_type": "text/plain",
-    "text": "MINISTERUL FINANȚELOR — ANAF — DIRECȚIA GENERALĂ ANTIFRAUDĂ FISCALĂ\nDirecția Regională Antifraudă Fiscală București — Formular 504\nDosar administrativ-fiscal nr. 4510/DGAF/2026\nData emiterii: 24.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A. — Direcția Operațiuni Juridice și Măsuri Asigurătorii\nObiect: DECIZIE DE INSTITUIRE A MĂSURILOR ASIGURĂTORII — SECHESTRU ASIGURĂTOR ASUPRA DISPONIBILITĂȚILOR BĂNEȘTI\n\nÎn temeiul art. 213 alin. (1), (5) și (8) din Legea nr. 207/2015 privind Codul de procedură fiscală, se dispune INSTITUIREA MĂSURII ASIGURĂTORII A SECHESTRULUI ASIGURĂTOR asupra disponibilităților bănești din conturile bancare deținute de:\nContribuabil: MARINESCU TUDOR ALEXANDRU, CNP: 1780418400125\nAutoritate beneficiară: STATUL ROMÂN PRIN ANAF — DIRECȚIA GENERALĂ ANTIFRAUDĂ FISCALĂ\nTemeiul măsurii: Creanță fiscală bugetară estimată (Art. 213 CPF)\nObligații fiscale estimate: 22.500,00 RON\nAccesorii estimate: 2.500,00 RON\nPlafon măsură asigurătorie: 25.000,00 RON\n\nSumele vor fi indisponibilizate în cont fără virare până la emiterea titlului executoriu definitiv, cu referință la Cont special consemnare Trezorerie IBAN: RO27TREZ7005005XXX024510.\nPrezentul act oficial poartă semnătură electronică calificată și ștampilă oficială L.S.",
-    "pdf_path": "pdfs/S9.pdf"
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC VASILE DAN\nDosarul de executare nr. 6100/2026\nData: 20.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 6100/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: MOLDOVAN GHEORGHE, CNP: 1520305123456\nCreditor: CREDIT RAPID IFN S.A.\nNatura creanței: Comercială\nDebit principal: 3.800,00 RON\nCheltuieli de executare: 200,00 RON\nTotal de recuperat: 4.000,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO27CECEB000000000123456.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
   },
   "bank": {
     "customers": [
       {
-        "customer_id": "CUST-SECH-01",
-        "full_name": "MARINESCU TUDOR ALEXANDRU",
-        "national_id": "1780418400125",
+        "customer_id": "CUST-009",
+        "full_name": "MOLDOVAN GHEORGHE",
+        "national_id": "1520305123456",
         "is_legal_entity": false,
         "status": "ACTIV",
-        "address": "Șos. Kiseleff nr. 24, Sector 1, București"
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
       }
     ],
     "accounts": [
       {
-        "iban": "RO72RZBR0000060021904510",
-        "customer_id": "CUST-SECH-01",
+        "iban": "RO54RZBR0000060012345678",
+        "customer_id": "CUST-009",
         "account_type": "CURENT",
         "currency": "RON",
-        "opening_balance": 8000.0,
-        "current_balance": 15792.0
+        "opening_balance": 0,
+        "current_balance": 2000
       }
     ],
     "transactions": [
       {
-        "tx_id": "TX-SECH9-01",
-        "iban": "RO72RZBR0000060021904510",
-        "booking_date": "2026-08-14",
+        "tx_id": "TX-S9-08",
+        "iban": "RO54RZBR0000060012345678",
+        "booking_date": "2026-08-12",
         "direction": "CREDIT",
-        "amount": 7200.0,
-        "counterparty_name": "SC CARPATIA TECH SYSTEMS SA",
+        "amount": 2000,
+        "counterparty_name": "CASA JUDETEANA DE PENSII CLUJ",
         "counterparty_iban": null,
-        "description": "Drepturi salariale luna Iulie"
+        "description": "Pensie limita de varsta"
       },
       {
-        "tx_id": "TX-SECH9-02",
-        "iban": "RO72RZBR0000060021904510",
-        "booking_date": "2026-09-14",
+        "tx_id": "TX-S9-09",
+        "iban": "RO54RZBR0000060012345678",
+        "booking_date": "2026-09-12",
         "direction": "CREDIT",
-        "amount": 7200.0,
-        "counterparty_name": "SC CARPATIA TECH SYSTEMS SA",
+        "amount": 2000,
+        "counterparty_name": "CASA JUDETEANA DE PENSII CLUJ",
         "counterparty_iban": null,
-        "description": "Drepturi salariale luna August"
+        "description": "Pensie limita de varsta"
       },
       {
-        "tx_id": "TX-SECH9-03",
-        "iban": "RO72RZBR0000060021904510",
-        "booking_date": "2026-10-14",
+        "tx_id": "TX-S9-10",
+        "iban": "RO54RZBR0000060012345678",
+        "booking_date": "2026-10-12",
         "direction": "CREDIT",
-        "amount": 7200.0,
-        "counterparty_name": "SC CARPATIA TECH SYSTEMS SA",
+        "amount": 2000,
+        "counterparty_name": "CASA JUDETEANA DE PENSII CLUJ",
         "counterparty_iban": null,
-        "description": "Drepturi salariale luna Septembrie"
-      },
-      {
-        "tx_id": "TX-SECH9-04",
-        "iban": "RO72RZBR0000060021904510",
-        "booking_date": "2026-10-18",
-        "direction": "CREDIT",
-        "amount": 292.0,
-        "counterparty_name": "AGENTIA PENTRU PLATI SI INSPECTIE SOCIALA MUNICIPIUL BUCURESTI",
-        "counterparty_iban": "RO27TREZ7005005XXX024510",
-        "description": "Alocatie de stat pentru copii"
-      },
-      {
-        "tx_id": "TX-SECH9-05",
-        "iban": "RO72RZBR0000060021904510",
-        "booking_date": "2026-10-20",
-        "direction": "CREDIT",
-        "amount": 300.0,
-        "counterparty_name": "INSPECTORATUL SCOLAR AL MUNICIPIULUI BUCURESTI",
-        "counterparty_iban": null,
-        "description": "Bursa de merit elev studii preuniversitare"
+        "description": "Pensie limita de varsta"
       }
     ],
     "active_garnishments": []
@@ -88,7 +68,7 @@
   "expected": {
     "doc_type": "POPRIRE_INFIINTARE",
     "status": "AUTO_PROCESSED",
-    "amount_to_hold": 10400.0,
+    "amount_to_hold": 237.67,
     "exception_codes": [],
     "amount_after_review": null
   },

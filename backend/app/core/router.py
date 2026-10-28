@@ -69,7 +69,7 @@ def classify_document(doc: IncomingDocument, emit: EmitFn) -> tuple[DocType, flo
             target_module = "popriri (PopririZero)" if doc_type in (
                 DocType.POPRIRE_INFIINTARE, DocType.POPRIRE_SISTARE,
                 DocType.POPRIRE_MODIFICARE, DocType.CERERE_INFORMATII,
-            ) else "autoritati (Roadmap)"
+            ) else "autoritati (Cereri autorități)"
             emit(AgentName.INTAKE_ROUTER, AgentStatus.COMPLETED,
                  f"Document clasificat: {doc_type.value} → {target_module}",
                  {"doc_type": doc_type.value, "confidence": 0.96, "method": "KEYWORD",

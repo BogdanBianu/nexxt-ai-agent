@@ -5,8 +5,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronRight, Minus, OctagonAlert } from "lucide-react";
 import { api } from "../api/client";
 import type { AgentEvent, AgentName, AgentStatus, Case } from "../types/contracts";
-import { PIPELINE } from "../lib/ui";
+import { humanize, PIPELINE } from "../lib/ui";
 import { AgentDrawer } from "./AgentDrawer";
+import { ServerDown } from "./ServerDown";
 
 const REPLAY_MS = 140;
 
@@ -64,13 +65,17 @@ interface Props {
   // Dosarul complet: excepțiile marchează pașii cu probleme, restul alimentează panoul de detalii
   data: Case | null;
   onReplayDone?: () => void;
+  // Incrementat după o decizie HITL ca evenimentele noi să fie reîncărcate și redate
+  runKey?: number;
 }
 
-export function AgentPipeline({ caseId, animate, data, onReplayDone }: Props) {
+export function AgentPipeline({ caseId, animate, data, onReplayDone, runKey = 0 }: Props) {
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [shown, setShown] = useState(0);
   const [doneFlag, setDoneFlag] = useState(false);
   const [openAgent, setOpenAgent] = useState<AgentName | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const doneRef = useRef(onReplayDone);
   doneRef.current = onReplayDone;
 
@@ -81,13 +86,18 @@ export function AgentPipeline({ caseId, animate, data, onReplayDone }: Props) {
     setShown(0);
     setDoneFlag(false);
     setOpenAgent(null);
+    setLoadError(false);
 
     const finish = () => {
       setDoneFlag(true);
       doneRef.current?.();
     };
 
-    api.getCaseEvents(caseId).then((evs) => {
+    api.getCaseEvents(caseId).catch(() => {
+      if (!cancelled) setLoadError(true);
+      return null;
+    }).then((evs) => {
+      if (!evs) return;
       if (cancelled) return;
       const sorted = [...evs].sort((a, b) => a.seq - b.seq);
       setEvents(sorted);
@@ -111,7 +121,7 @@ export function AgentPipeline({ caseId, animate, data, onReplayDone }: Props) {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [caseId, animate]);
+  }, [caseId, animate, runKey, attempt]);
 
   const byAgent = useMemo(() => {
     const m = new Map<AgentName, AgentEvent[]>();
@@ -129,67 +139,71 @@ export function AgentPipeline({ caseId, animate, data, onReplayDone }: Props) {
           Agenți
         </h2>
         <span aria-live="polite" className={`text-sm ${problems ? "font-semibold text-danger-ink" : "text-muted"}`}>
-          {!doneFlag ? "Procesare în curs…" : problems ? `${problems === 1 ? "O problemă" : `${problems} probleme`} găsite` : "Fără probleme"}
+          {loadError ? "Indisponibil" : !doneFlag ? "Procesare în curs…" : problems ? `${problems === 1 ? "O problemă" : `${problems} probleme`} găsite` : "Fără probleme"}
         </span>
       </div>
 
-      <ol className="px-5 pt-5 pb-4">
-        {PIPELINE.map((node, idx) => {
-          const evs = byAgent.get(node.agent) ?? [];
-          const last = evs[evs.length - 1];
-          const agentExc = open.filter((e) => e.agent === node.agent);
-          const state: StepState = agentExc.length ? "PROBLEM" : baseState(last?.status);
-          const clickable = doneFlag && evs.length > 0 && !!data;
-          const isLast = idx === PIPELINE.length - 1;
-          const nextReached = !isLast && byAgent.has(PIPELINE[idx + 1].agent);
+      {loadError ? (
+        <ServerDown compact auto={false} onRetry={() => setAttempt((a) => a + 1)} />
+      ) : (
+        <ol className="px-5 pt-5 pb-4">
+          {PIPELINE.map((node, idx) => {
+            const evs = byAgent.get(node.agent) ?? [];
+            const last = evs[evs.length - 1];
+            const agentExc = open.filter((e) => e.agent === node.agent);
+            const state: StepState = agentExc.length ? "PROBLEM" : baseState(last?.status);
+            const clickable = doneFlag && evs.length > 0 && !!data;
+            const isLast = idx === PIPELINE.length - 1;
+            const nextReached = !isLast && byAgent.has(PIPELINE[idx + 1].agent);
 
-          return (
-            <li key={node.agent} className="relative grid grid-cols-[1.5rem_1fr] gap-x-3.5 pb-5 last:pb-0">
-              {!isLast && (
-                <span aria-hidden className={`absolute top-6 bottom-0 left-[11.5px] w-px ${nextReached ? "bg-ink" : "bg-line"}`} />
-              )}
-              <Marker state={state} index={idx} />
-
-              <button
-                type="button"
-                disabled={!clickable}
-                onClick={() => setOpenAgent(node.agent)}
-                aria-label={clickable ? `${node.label}: vezi raționamentul complet` : undefined}
-                className={`group -mx-2 -mt-1 block min-w-0 rounded-lg px-2 py-1 text-left transition-colors duration-150 disabled:cursor-default ${
-                  state === "PROBLEM" ? "bg-danger-soft ring-1 ring-danger/25 hover:bg-danger-soft/70" : clickable ? "hover:bg-canvas" : ""
-                }`}
-              >
-                <span className="flex items-baseline justify-between gap-3">
-                  <span className={`font-semibold ${state === "IDLE" ? "text-muted" : state === "PROBLEM" ? "text-danger-ink" : ""}`}>{node.label}</span>
-                  <span className={`flex shrink-0 items-center gap-1 text-xs ${state === "PROBLEM" ? "font-semibold text-danger-ink" : "text-muted"}`}>
-                    {STATE_WORD[state]}
-                    {clickable && (
-                      <ChevronRight size={14} aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5" />
-                    )}
-                  </span>
-                </span>
-
-                {agentExc.map((e) => (
-                  <span key={e.code + e.message} className="mt-1 block text-sm leading-snug font-medium text-danger-ink">
-                    {e.message}
-                  </span>
-                ))}
-
-                <span className={`mt-0.5 block text-sm leading-snug break-words ${state === "IDLE" ? "text-muted/80" : "text-muted"}`}>
-                  {state === "IDLE" ? node.hint : last?.message}
-                </span>
-
-                {state === "PROBLEM" && (
-                  <span className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-danger-ink underline underline-offset-4">
-                    Vezi de ce
-                    <ChevronRight size={14} aria-hidden />
-                  </span>
+            return (
+              <li key={node.agent} className="relative grid grid-cols-[1.5rem_1fr] gap-x-3.5 pb-5 last:pb-0">
+                {!isLast && (
+                  <span aria-hidden className={`absolute top-6 bottom-0 left-[11.5px] w-px ${nextReached ? "bg-ink" : "bg-line"}`} />
                 )}
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+                <Marker state={state} index={idx} />
+
+                <button
+                  type="button"
+                  disabled={!clickable}
+                  onClick={() => setOpenAgent(node.agent)}
+                  aria-label={clickable ? `${node.label}: vezi raționamentul complet` : undefined}
+                  className={`group -mx-2 -mt-1 block min-w-0 rounded-lg px-2 py-1 text-left transition-colors duration-150 disabled:cursor-default ${
+                    state === "PROBLEM" ? "bg-danger-soft ring-1 ring-danger/25 hover:bg-danger-soft/70" : clickable ? "hover:bg-canvas" : ""
+                  }`}
+                >
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className={`font-semibold ${state === "IDLE" ? "text-muted" : state === "PROBLEM" ? "text-danger-ink" : ""}`}>{node.label}</span>
+                    <span className={`flex shrink-0 items-center gap-1 text-xs ${state === "PROBLEM" ? "font-semibold text-danger-ink" : "text-muted"}`}>
+                      {STATE_WORD[state]}
+                      {clickable && (
+                        <ChevronRight size={14} aria-hidden className="transition-transform duration-150 group-hover:translate-x-0.5" />
+                      )}
+                    </span>
+                  </span>
+
+                  {agentExc.map((e) => (
+                    <span key={e.code + e.message} className="mt-1 block text-sm leading-snug font-medium text-danger-ink">
+                      {humanize(e.message)}
+                    </span>
+                  ))}
+
+                  <span className={`mt-0.5 block text-sm leading-snug break-words ${state === "IDLE" ? "text-muted/80" : "text-muted"}`}>
+                    {state === "IDLE" ? node.hint : humanize(last?.message)}
+                  </span>
+
+                  {state === "PROBLEM" && (
+                    <span className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-danger-ink underline underline-offset-4">
+                      Vezi de ce
+                      <ChevronRight size={14} aria-hidden />
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
 
       {doneFlag && <p className="border-t border-line px-5 py-3 text-xs text-muted">Apasă pe un agent ca să vezi ce a analizat și de ce a decis așa.</p>}
 

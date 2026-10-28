@@ -109,3 +109,57 @@ export function dayLabel(iso: string, now = new Date()) {
   if (days === 1) return `Ieri, ${date}`;
   return d.toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "long" });
 }
+
+// ── Texte pe înțeles din mesajele brute ale backend-ului ────────────────────────────────
+const METHOD_SHORT: Record<string, string> = {
+  KEYWORD: "cuvânt-cheie",
+  PAYER_REGISTRY: "registru plătitori",
+  PATTERN: "tipar",
+  LLM: "AI",
+  HUMAN: "decizie ofițer",
+  FALLBACK: "implicit",
+  REGEX: "șabloane",
+};
+
+const MODULE_NAME: Record<string, string> = {
+  popriri: "PopririZero",
+  autoritati: "Cereri autorități",
+  sechestre: "Sechestre asigurătorii",
+  insolvente: "Insolvență și succesiuni",
+  gdpr: "Cereri GDPR",
+};
+
+const SINGULAR: [RegExp, string][] = [
+  [/\b1 conturi\b/g, "1 cont"],
+  [/\b1 popriri active\b/g, "1 poprire activă"],
+  [/\b1 încasări clasificate\b/g, "1 încasare clasificată"],
+  [/\b1 anomalii găsite\b/g, "1 anomalie găsită"],
+  [/\b1 excepții blocante\b/g, "1 excepție blocantă"],
+];
+
+// Traduce enum-urile, formatează sumele și corectează pluralul din mesajele agenților
+export function humanize(msg: string | null | undefined): string {
+  if (!msg) return "";
+  let s = msg.replace(/(\d+(?:\.\d+)?)\s?RON\b/g, (_, n) => formatRon(Number(n)));
+  s = s.replace(/→ ([a-z_]+) \((?:PopririZero|Roadmap)\)/g, (_, id) => `→ modulul ${MODULE_NAME[id] ?? id}`);
+  s = s.replace(/\b(KEYWORD|PAYER_REGISTRY|PATTERN|LLM|HUMAN|FALLBACK|REGEX)\b/g, (m) => METHOD_SHORT[m] ?? m);
+  s = s.replace(/\b[A-Z][A-Z_]{3,}\b/g, (m) => {
+    if (m in CATEGORY_LABEL) return CATEGORY_LABEL[m as IncomeCategory];
+    if (m in DOC_LABEL) return DOC_LABEL[m as DocType];
+    if (m in STATUS_STYLE) return STATUS_STYLE[m as CaseStatus].label;
+    return m;
+  });
+  s = s.replace(/\((E0\d)\)/g, (m, code) => (EXCEPTION_LABEL[code] ? `(${EXCEPTION_LABEL[code]})` : m));
+  s = s.replace(/: (VALID|INVALID)\b/g, (_, v) => `: ${v.toLowerCase()}`);
+  for (const [re, rep] of SINGULAR) s = s.replace(re, rep);
+  return s.replace(/ · /g, ", ");
+}
+
+// Titlul unui dosar: debitorul sau, pentru documente fără debitor (ex. cereri de la Poliție), emitentul
+export function caseTitle(c: { order?: { debtor_name?: string | null; issuer_name?: string } | null; customer?: { full_name: string } | null; document?: { text?: string | null } }) {
+  if (c.order?.debtor_name) return c.order.debtor_name;
+  if (c.customer?.full_name) return c.customer.full_name;
+  if (c.order?.issuer_name) return c.order.issuer_name;
+  const first = c.document?.text?.split("\n").find((l) => l.trim());
+  return first?.trim() ?? "Debitor neidentificat";
+}

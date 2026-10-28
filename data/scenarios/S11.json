@@ -1,74 +1,46 @@
 {
   "scenario_id": "S11",
-  "title": "Sechestru asigurător penal (Art. 249 CPP / ANABI) — Indisponibilizare multi-cont și depozit la termen",
-  "description": "Ordonanță a procurorului din cadrul Parchetului de pe lângă Tribunalul București de instituire a sechestrului asigurător penal (Art. 249 CPP raportat la Legea nr. 318/2015 ANABI) până la plafonul de 48.000 RON. Inculpatul deține un cont curent (12.000 RON sold anterior + 9.000 RON salariu -> 15.000 RON înghețați) și un depozit la termen (8.500 RON -> 100% înghețat), rezultând 23.500 RON indisponibilizați automat.",
+  "title": "Datorie mică — se blochează doar cât se datorează",
+  "description": "Urmăribil: 2.000 RON din salariu + 2.000 RON sold anterior = 4.000 RON, dar datoria totală e de 750 RON. R-CAP-08: se blochează exact 750 RON.",
   "document": {
-    "document_id": "DOC-SECH-PEN-1890",
-    "filename": "ordonanta_sechestru_penal_PTB_ANABI_1890_P_2026.pdf",
-    "received_at": "2026-10-28T15:00:00Z",
+    "document_id": "DOC-S11",
+    "filename": "adresa_S11.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
     "content_type": "text/plain",
-    "text": "MINISTERUL PUBLIC — PARCHETUL DE PE LÂNGĂ TRIBUNALUL BUCUREȘTI\nSecția de Urmărire Penală — Cooperare ANABI (Legea nr. 318/2015)\nDosar penal nr. 1890/P/2026\nData emiterii: 22.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A. — Direcția Operațiuni Juridice și Măsuri Asigurătorii\nObiect: ORDONANȚĂ DE INSTITUIRE A MĂSURII ASIGURĂTORII A SECHESTRULUI PENAL (ART. 249–252 COD PROCEDURĂ PENALĂ)\n\nÎn temeiul art. 249 alin. (1) și (5) din Codul de procedură penală și art. 27 din Legea nr. 318/2015 privind ANABI, procurorul dispune INSTITUIREA MĂSURII ASIGURĂTORII A SECHESTRULUI ASIGURĂTOR asupra conturilor în lei și în valută deținute de:\nInculpat: CANTACUZINO RAREȘ ANDREI, CNP: 1761105400344\nParte civilă:AGENȚIA NAȚIONALĂ DE ADMINISTRARE FISCALĂ — REPREZENTANT STATUL ROMÂN\nTemeiul măsurii: Măsură asigurătorie penală pentru repararea pagubei (Art. 249 CPP)\nPrejudiciu estimat: 45.000,00 RON\nCheltuieli judiciare: 3.000,00 RON\nPlafon măsură asigurătorie: 48.000,00 RON\n\nCont special unic de consemnare ANABI IBAN: RO53CECEB00008ANABI01890.\nPrezenta ordonanță poartă semnătură și ștampilă oficială a Parchetului L.S.",
-    "pdf_path": "pdfs/S11.pdf"
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC POP ANA\nDosarul de executare nr. 880/2026\nData: 22.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 880/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: LUPU ADRIAN, CNP: 1900722123452\nCreditor: DIGI ROMANIA S.A.\nNatura creanței: Comercială\nDebit principal: 600,00 RON\nCheltuieli de executare: 150,00 RON\nTotal de recuperat: 750,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO27CECEB000000000123456.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
   },
   "bank": {
     "customers": [
       {
-        "customer_id": "CUST-SECH-03",
-        "full_name": "CANTACUZINO RAREȘ ANDREI",
-        "national_id": "1761105400344",
+        "customer_id": "CUST-011",
+        "full_name": "LUPU ADRIAN",
+        "national_id": "1900722123452",
         "is_legal_entity": false,
         "status": "ACTIV",
-        "address": "Str. Polonă nr. 19, Sector 1, București"
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
       }
     ],
     "accounts": [
       {
-        "iban": "RO76RZBR0000060043701890",
-        "customer_id": "CUST-SECH-03",
+        "iban": "RO24RZBR0000060044445555",
+        "customer_id": "CUST-011",
         "account_type": "CURENT",
         "currency": "RON",
-        "opening_balance": 12000.0,
-        "current_balance": 21000.0
-      },
-      {
-        "iban": "RO49RZBR0000060043701891",
-        "customer_id": "CUST-SECH-03",
-        "account_type": "DEPOZIT",
-        "currency": "RON",
-        "opening_balance": 8500.0,
-        "current_balance": 8500.0
+        "opening_balance": 2000,
+        "current_balance": 8000
       }
     ],
     "transactions": [
       {
-        "tx_id": "TX-SECH11-01",
-        "iban": "RO76RZBR0000060043701890",
-        "booking_date": "2026-08-15",
-        "direction": "CREDIT",
-        "amount": 9000.0,
-        "counterparty_name": "SC KRONSTADT ENGINEERING GROUP SRL",
-        "counterparty_iban": null,
-        "description": "Salariu net luna Iulie"
-      },
-      {
-        "tx_id": "TX-SECH11-02",
-        "iban": "RO76RZBR0000060043701890",
-        "booking_date": "2026-09-15",
-        "direction": "CREDIT",
-        "amount": 9000.0,
-        "counterparty_name": "SC KRONSTADT ENGINEERING GROUP SRL",
-        "counterparty_iban": null,
-        "description": "Salariu net luna August"
-      },
-      {
-        "tx_id": "TX-SECH11-03",
-        "iban": "RO76RZBR0000060043701890",
+        "tx_id": "TX-S11-10",
+        "iban": "RO24RZBR0000060044445555",
         "booking_date": "2026-10-15",
         "direction": "CREDIT",
-        "amount": 9000.0,
-        "counterparty_name": "SC KRONSTADT ENGINEERING GROUP SRL",
+        "amount": 6000,
+        "counterparty_name": "SC AUTO PARTS SRL",
         "counterparty_iban": null,
-        "description": "Salariu net luna Septembrie"
+        "description": "Salariu octombrie"
       }
     ],
     "active_garnishments": []
@@ -76,7 +48,7 @@
   "expected": {
     "doc_type": "POPRIRE_INFIINTARE",
     "status": "AUTO_PROCESSED",
-    "amount_to_hold": 23500.0,
+    "amount_to_hold": 750.0,
     "exception_codes": [],
     "amount_after_review": null
   },

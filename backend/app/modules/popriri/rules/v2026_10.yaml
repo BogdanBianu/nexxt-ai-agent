@@ -67,3 +67,7 @@ rules:
   - id: R-DUP-10
     legal_source: "Procedură internă (evitarea dublei indisponibilizări pe același titlu)"
     description: "Același dosar de executare nu se înregistrează de două ori; a doua adresă ridică excepția E02."
+
+  - id: R-BAL-11
+    legal_source: "CPC art. 781 alin. (1) (sumele existente în cont; restul din încasările viitoare)"
+    description: "Se indisponibilizează cel mult soldul disponibil acum; diferența până la suma urmăribilă se reține din încasările viitoare."

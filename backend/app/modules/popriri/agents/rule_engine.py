@@ -2,6 +2,8 @@
 
 Doar împachetează `engine.calculator.compute_decision` și emite evenimente. Fără LLM.
 """
+from decimal import Decimal
+
 from app.contracts import AgentName, AgentStatus
 from app.modules.popriri.engine.calculator import compute_decision
 from .context import AgentContext
@@ -10,8 +12,11 @@ from .context import AgentContext
 def run(state: dict, ctx: AgentContext) -> dict:
     ctx.emit(AgentName.RULE_ENGINE, AgentStatus.STARTED, "Aplic regulile legale (calcul determinist)",
              {"rules_version": ctx.rulebook.version})
+    accounts = state.get("accounts", [])
+    available = sum((a.current_balance for a in accounts), Decimal(0)) if accounts else None
     decision, exc = compute_decision(state["order"], state.get("classified", []),
-                                     state.get("active_garnishments", []), ctx.rulebook)
+                                     state.get("active_garnishments", []), ctx.rulebook,
+                                     available_balance=available)
     for r in decision.rules_applied:
         ctx.emit(AgentName.RULE_ENGINE, AgentStatus.PROGRESS,
                  f"{r.rule_id}: din {r.base_amount} RON → urmăribil {r.seizable_amount} RON",

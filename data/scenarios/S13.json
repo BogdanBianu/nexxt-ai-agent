@@ -1,0 +1,47 @@
+{
+  "scenario_id": "S13",
+  "title": "Sistare pentru o poprire inexistentă",
+  "description": "Executorul cere sistarea popririi din dosarul 3141/2026, dar banca nu are nicio poprire înregistrată pe acel dosar. Excepția E07: ofițerul verifică (posibil dosar greșit sau altă bancă).",
+  "document": {
+    "document_id": "DOC-S13",
+    "filename": "adresa_S13.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC MARIN LIVIU\nDosarul de executare nr. 3141/2026\nData: 23.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE SISTARE A POPRIRII\n\nÎn dosarul de executare nr. 3141/2026 dispunem SISTAREA POPRIRII instituită asupra conturilor debitorului:\nDebitor: DRAGOMIR ELENA, CNP: 2870219123450\nCreditor: ORANGE ROMANIA S.A.\nTotal de recuperat: 2.400,00 RON (achitat)\nSemnătură și ștampilă L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-013",
+        "full_name": "DRAGOMIR ELENA",
+        "national_id": "2870219123450",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO34RZBR0000060088889999",
+        "customer_id": "CUST-013",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0,
+        "current_balance": 2500
+      }
+    ],
+    "transactions": [],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_SISTARE",
+    "status": "EXCEPTION_FLAGGED",
+    "amount_to_hold": 0.0,
+    "exception_codes": [
+      "E07"
+    ],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

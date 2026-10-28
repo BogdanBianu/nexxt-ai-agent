@@ -1,0 +1,71 @@
+{
+  "scenario_id": "S16",
+  "title": "Încasare ambiguă de 4.500 RON — ofițerul decide natura",
+  "description": "„Plata cf ctr 44/2026” de la o firmă fără istoric: poate fi salariu (1/3 urmăribil) sau alt venit (100%). Diferența e de 3.000 RON, deci sistemul nu ghicește: E03. După ce ofițerul confirmă că e salariu, se blochează 1.500 RON.",
+  "document": {
+    "document_id": "DOC-S16",
+    "filename": "adresa_S16.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC LAZAR OVIDIU\nDosarul de executare nr. 1500/2026\nData: 22.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 1500/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: CIOBANU DIANA, CNP: 2850303123456\nCreditor: EMAG IFN S.A.\nNatura creanței: Comercială\nDebit principal: 7.500,00 RON\nCheltuieli de executare: 500,00 RON\nTotal de recuperat: 8.000,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO27CECEB000000000123456.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-016",
+        "full_name": "CIOBANU DIANA",
+        "national_id": "2850303123456",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO43RZBR0000070023456789",
+        "customer_id": "CUST-016",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0,
+        "current_balance": 4500
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S16-10",
+        "iban": "RO43RZBR0000070023456789",
+        "booking_date": "2026-10-14",
+        "direction": "CREDIT",
+        "amount": 4500,
+        "counterparty_name": "GLOBAL CONSULTING SRL",
+        "counterparty_iban": null,
+        "description": "Plata cf ctr 44/2026"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "EXCEPTION_FLAGGED",
+    "amount_to_hold": 4500.0,
+    "exception_codes": [
+      "E03"
+    ],
+    "amount_after_review": 1500.0
+  },
+  "demo_review": {
+    "reviewer": "ofiter.juridic@raiffeisen.ro",
+    "overrides": [
+      {
+        "tx_id": "TX-S16-10",
+        "category": "SALARIU",
+        "note": "Contract de muncă atașat: plata lunară este salariul clientei."
+      }
+    ],
+    "resolve_codes": [
+      "E03"
+    ],
+    "note": "Confirmat salariu pe baza contractului de muncă."
+  }
+}
