@@ -376,16 +376,6 @@ def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = 
     doc_type, _conf, _reason = classify_document(case.document, sink.emit)
     case.doc_type = doc_type
     mod = module_for(doc_type)
-    doc_upper = (case.document.text or "").upper()
-    if (
-        case.scenario_id in ("S17", "S18", "S19", "S20")
-        or "SECHESTRU" in doc_upper
-        or "MĂSURI ASIGURĂTORII" in doc_upper
-        or "MASURI ASIGURATORII" in doc_upper
-        or "MĂSURILOR ASIGURĂTORII" in doc_upper
-        or "MASURILOR ASIGURATORII" in doc_upper
-    ):
-        mod = registry().get("sechestre") or mod
 
     if mod is None or mod.info.status.value == "ROADMAP":
         case.module_id = mod.info.module_id if mod else "necunoscut"

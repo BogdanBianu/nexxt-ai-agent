@@ -34,6 +34,9 @@ class GarnishmentOrder(Contract):
     consignment_iban: str | None = None         # contul în care banca virează sumele
     has_signature_and_stamp: bool = False
     references_case_number: str | None = None   # la sistare/modificare: dosarul vizat
+    # doar la sechestre: tipul măsurii (SECHESTRU_ASIGURATOR_FISCAL/CIVIL/PENAL) și temeiul ei legal
+    measure_type: str | None = None
+    legal_basis: str | None = None
     # încrederea pe câmp, 0..1 (cheie = numele câmpului de mai sus)
     field_confidence: dict[str, float] = Field(default_factory=dict)
     extraction_method: str = "REGEX"            # "REGEX" | "LLM"

@@ -13,6 +13,8 @@ class DocType(str, Enum):
     POPRIRE_MODIFICARE = "POPRIRE_MODIFICARE"
     CERERE_INFORMATII = "CERERE_INFORMATII"      # executorul cere doar informații despre conturi
     CERERE_AUTORITATE = "CERERE_AUTORITATE"      # Poliție / Parchet / DNA -> modulul autoritati
+    SECHESTRU_INSTITUIRE = "SECHESTRU_INSTITUIRE"    # sechestru asigurător fiscal / civil / penal -> modulul sechestre
+    SECHESTRU_RIDICARE = "SECHESTRU_RIDICARE"        # ridicarea măsurii asigurătorii -> modulul sechestre
     NOTIFICARE_INSOLVENTA = "NOTIFICARE_INSOLVENTA"  # deschiderea procedurii (Legea 85/2014) -> modulul insolventa
     CERTIFICAT_MOSTENITOR = "CERTIFICAT_MOSTENITOR"  # certificat de moștenitor (notar) -> modulul insolventa
     NECUNOSCUT = "NECUNOSCUT"

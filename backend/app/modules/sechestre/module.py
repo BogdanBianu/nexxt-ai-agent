@@ -22,6 +22,9 @@ from app.modules.popriri.graph import _emit_skipped_middle_agents, route_after_r
 from app.modules.popriri.state import PopririState, merge
 from .extractor import run_sechestre_extraction
 
+AGENT_DOC_TYPE = {DocType.SECHESTRU_INSTITUIRE: DocType.POPRIRE_INFIINTARE,
+                  DocType.SECHESTRU_RIDICARE: DocType.POPRIRE_SISTARE}
+
 SECHESTRE_RULES_PATH = str(Path(__file__).resolve().parent / "rules" / "v2026_10.yaml")
 
 SECHESTRE_NODES = {
@@ -118,7 +121,7 @@ class SechestreModule:
             "și penale (Art. 249 CPP / ANABI): înghețare fonduri până la concurența plafonului și protecție sume exceptate."
         ),
         status=ModuleStatus.ACTIVE,
-        handled_doc_types=[],
+        handled_doc_types=[DocType.SECHESTRU_INSTITUIRE, DocType.SECHESTRU_RIDICARE],
     )
 
     def process(
@@ -136,7 +139,8 @@ class SechestreModule:
             {
                 "case_id": case.case_id,
                 "document": case.document,
-                "doc_type_hint": case.doc_type,
+                # agenții comuni cu PopririZero lucrează pe înființare / sistare
+                "doc_type_hint": AGENT_DOC_TYPE.get(case.doc_type, case.doc_type),
                 "review": review,
             },
             ctx,

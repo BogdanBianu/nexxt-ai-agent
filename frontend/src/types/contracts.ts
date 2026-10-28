@@ -7,6 +7,8 @@ export type DocType =
   | "POPRIRE_MODIFICARE"
   | "CERERE_INFORMATII"
   | "CERERE_AUTORITATE"
+  | "SECHESTRU_INSTITUIRE"
+  | "SECHESTRU_RIDICARE"
   | "NOTIFICARE_INSOLVENTA"
   | "CERTIFICAT_MOSTENITOR"
   | "NECUNOSCUT";
@@ -82,6 +84,9 @@ export interface GarnishmentOrder {
   consignment_iban?: string | null;
   has_signature_and_stamp: boolean;
   references_case_number?: string | null;
+  // doar la sechestre: "SECHESTRU_ASIGURATOR_FISCAL" | "SECHESTRU_ASIGURATOR_CIVIL" | "SECHESTRU_ASIGURATOR_PENAL"
+  measure_type?: string | null;
+  legal_basis?: string | null;
   field_confidence: Record<string, number>;
   extraction_method: string;
 }
