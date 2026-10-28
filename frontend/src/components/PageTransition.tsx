@@ -47,8 +47,8 @@ export function IntroTransition({ onDone }: { onDone: () => void }) {
 
       // Logo-ul devine fereastra prin care se vede pagina
       setLogoHole(o);
-      await img.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: EASE_OUT, fill: "forwards" }).finished;
-      await sleep(160);
+      await img.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: EASE_OUT, fill: "forwards" }).finished;
+      await sleep(60);
       o.style.pointerEvents = "none";
 
       // Zoom în fereastră; spre final overlay-ul se stinge, ca să nu rămână galben între brațele logo-ului
@@ -58,7 +58,7 @@ export function IntroTransition({ onDone }: { onDone: () => void }) {
           { transform: "scale(9)", opacity: 1, offset: 0.55 },
           { transform: "scale(26)", opacity: 0 },
         ],
-        { duration: 820, easing: EASE_IN_OUT, fill: "forwards" },
+        { duration: 520, easing: EASE_IN_OUT, fill: "forwards" },
       ).finished;
       if (!cancelled) onDone();
     })();
