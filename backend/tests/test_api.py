@@ -36,6 +36,17 @@ def test_upload_txt_runs_pipeline_and_feeds_metrics():
     assert "RAIFFEISEN" in pdf.content.decode("utf-8", errors="ignore") or pdf.content[:5] == b"%PDF-"
 
 
+def test_upload_auto_detects_customer_bank_without_scenario_pairing():
+    """La upload fără scenario_id (sau cu AUTO), backend-ul găsește singur persoana în memorie (ex. S4 DUMITRU ALEXANDRU)."""
+    text_s4 = main.load_scenario("S4").document.text
+    res = client.post("/api/cases/upload", files={"file": ("document_email.txt", text_s4.encode("utf-8"), "text/plain")})
+    assert res.status_code == 200, res.text
+    case = res.json()
+    assert case["scenario_id"] == "S4"
+    assert case["customer"]["full_name"] == "DUMITRU ALEXANDRU"
+    assert case["status"] == "EXCEPTION_FLAGGED"
+
+
 def test_upload_rejects_unsupported_files():
     res = client.post("/api/cases/upload", files={"file": ("poza.png", b"\x89PNG....", "image/png")})
     assert res.status_code == 415
