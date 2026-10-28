@@ -141,7 +141,7 @@ const SINGULAR: [RegExp, string][] = [
 export function humanize(msg: string | null | undefined): string {
   if (!msg) return "";
   let s = msg.replace(/(\d+(?:\.\d+)?)\s?RON\b/g, (_, n) => formatRon(Number(n)));
-  s = s.replace(/→ ([a-z_]+) \((?:PopririZero|Roadmap)\)/g, (_, id) => `→ modulul ${MODULE_NAME[id] ?? id}`);
+  s = s.replace(/→ ([a-z_]+) \(([^)]+)\)/g, (_, id, name) => `→ modulul ${name === "Roadmap" ? (MODULE_NAME[id] ?? id) : name}`);
   s = s.replace(/\b(KEYWORD|PAYER_REGISTRY|PATTERN|LLM|HUMAN|FALLBACK|REGEX)\b/g, (m) => METHOD_SHORT[m] ?? m);
   s = s.replace(/\b[A-Z][A-Z_]{3,}\b/g, (m) => {
     if (m in CATEGORY_LABEL) return CATEGORY_LABEL[m as IncomeCategory];

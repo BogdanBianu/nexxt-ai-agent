@@ -1,4 +1,4 @@
-// Compunerea aplicației: lista de dosare ↔ dosarul deschis. Proprietar: Om4 (componentele Om5 se montează în slotul marcat).
+// Compunerea aplicației: pagina de start ↔ lista unui modul ↔ dosarul deschis. Proprietar: Om4 (componentele Om5 se montează în slotul marcat).
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api/client";
 import { AccountDissection } from "./components/AccountDissection";
@@ -6,11 +6,16 @@ import { AgentPipeline } from "./components/AgentPipeline";
 import { AppShell } from "./components/AppShell";
 import { CaseFacts, CaseFigures, CaseHeader } from "./components/CaseHeader";
 import { AuditTrail } from "./components/AuditTrail";
+import { AuthorityFacts, AuthorityFigures, AuthorityReport, AuthorityRequest } from "./components/AuthorityPanels";
 import { CaseInbox } from "./components/CaseInbox";
 import { DocumentViewer } from "./components/DocumentViewer";
+import { Home } from "./components/Home";
 import { HitlWorkbench, ReviewHistory } from "./components/HitlWorkbench";
+import { SeizureFacts, SeizureFigures, SeizureLifecycle } from "./components/SeizurePanels";
 import { ServerDown } from "./components/ServerDown";
 import type { Case } from "./types/contracts";
+import { moduleOf } from "./lib/modules";
+import { isLifting, isSeizure } from "./lib/seizure";
 import { formatRon } from "./lib/ui";
 
 type Tab = "analysis" | "documents" | "audit";
@@ -22,6 +27,8 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function App() {
+  // Modulul a cărui listă e deschisă; null = pagina de start
+  const [view, setView] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [animate, setAnimate] = useState(false);
   const [replayDone, setReplayDone] = useState(false);
@@ -55,16 +62,36 @@ export default function App() {
   }, []);
 
   const home = useCallback(() => {
+    setView(null);
     setSelectedId(null);
     setCurrent(null);
     window.scrollTo({ top: 0 });
   }, []);
 
+  const goModule = useCallback((moduleId: string) => {
+    setView(moduleId);
+    setSelectedId(null);
+    setCurrent(null);
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  // „Toate dosarele” duce la lista modulului dosarului, chiar dacă a fost deschis de pe pagina de start
+  const back = useCallback(() => {
+    setView((v) => (current ? moduleOf(current) : (v ?? "popriri")));
+    setSelectedId(null);
+    setCurrent(null);
+    window.scrollTo({ top: 0 });
+  }, [current]);
+
   const onReplayDone = useCallback(() => setReplayDone(true), []);
 
-  // Documentele redirecționate (ex. cereri de la Poliție) nu au sume, fișă de poprire sau extras
   const routed = current?.status === "ROUTED_TO_OTHER_MODULE";
-  const activeTab: Tab = routed && tab === "analysis" ? "documents" : tab;
+  // Documentele redirecționate și cererile autorităților nu au sume de blocat, fișă de poprire sau calcul pe extras
+  const seizure = !!current && isSeizure(current);
+  const authority = current?.module_id === "autoritati";
+  const lean = routed || (seizure && isLifting(current));
+  const activeTab: Tab = lean && tab === "analysis" ? "documents" : tab;
+  const navModule = selectedId ? (current ? moduleOf(current) : view) : view;
 
   const [caseError, setCaseError] = useState(false);
 
@@ -86,24 +113,34 @@ export default function App() {
   }, [loadCase]);
 
   return (
-    <AppShell onHome={home}>
+    <AppShell current={navModule} onHome={home} onModule={goModule}>
       {!selectedId ? (
-        <CaseInbox onOpen={open} />
+        view ? (
+          <CaseInbox key={view} moduleId={view} onOpen={open} />
+        ) : (
+          <Home onModule={goModule} onOpen={open} />
+        )
       ) : (
         caseError && !current ? (
           <ServerDown onRetry={loadCase} />
         ) : (
           <>
-            {current && <CaseHeader data={current} pending={!replayDone} onBack={home} notice={notice} />}
+            {current && <CaseHeader data={current} pending={!replayDone} onBack={back} notice={notice} />}
             <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
               <div className="min-w-0 space-y-10">
-                {current && !routed && <CaseFigures data={current} pending={!replayDone} />}
+                {current && seizure && !isLifting(current) && <SeizureFigures data={current} pending={!replayDone} />}
+                {current && authority && <AuthorityFigures data={current} pending={!replayDone} />}
+                {current && !seizure && !authority && !lean && <CaseFigures data={current} pending={!replayDone} />}
                 {current && replayDone && <HitlWorkbench data={current} onUpdated={onReviewed} />}
-                {current && !routed && <CaseFacts data={current} />}
+                {current && seizure && replayDone && <SeizureLifecycle data={current} onOpen={(id) => open(id, false)} />}
+                {current && seizure && <SeizureFacts data={current} />}
+                {current && authority && replayDone && <AuthorityRequest data={current} />}
+                {current && authority && <AuthorityFacts data={current} />}
+                {current && !seizure && !authority && !lean && <CaseFacts data={current} />}
                 {current && replayDone && (
                   <div>
                     <div role="tablist" aria-label="Secțiuni dosar" className="flex gap-6 border-b border-line">
-                      {TABS.filter((t) => !(routed && t.id === "analysis")).map((t) => (
+                      {TABS.filter((t) => !(lean && t.id === "analysis")).map((t) => (
                         <button
                           key={t.id}
                           role="tab"
@@ -113,13 +150,14 @@ export default function App() {
                             activeTab === t.id ? "border-ink" : "border-transparent text-muted hover:text-ink"
                           }`}
                         >
-                          {t.label}
+                          {authority && t.id === "analysis" ? "Date comunicate" : t.label}
                           {t.id === "audit" && current.audit?.length ? <span className="ml-1.5 font-medium text-muted">{current.audit.length}</span> : null}
                         </button>
                       ))}
                     </div>
                     <div role="tabpanel" className="pt-6">
-                      {activeTab === "analysis" && <AccountDissection data={current} />}
+                      {activeTab === "analysis" &&
+                        (authority ? <AuthorityReport data={current} /> : <AccountDissection data={current} seizure={seizure} />)}
                       {activeTab === "documents" && <DocumentViewer data={current} />}
                       {activeTab === "audit" && (
                         <div className="space-y-10">

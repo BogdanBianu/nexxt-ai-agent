@@ -10,13 +10,13 @@ const TONE: Record<StatusTone, { className: string; Icon: typeof CircleCheck }> 
   neutral: { className: "border-line bg-canvas text-muted", Icon: CircleDashed },
 };
 
-export function StatusChip({ status }: { status: CaseStatus }) {
+export function StatusChip({ status, label }: { status: CaseStatus; label?: string }) {
   const s = STATUS_STYLE[status];
   const { className, Icon } = TONE[s.tone];
   return (
     <span className={`inline-flex shrink-0 items-center gap-1.5 rounded border py-0.5 pr-2 pl-1.5 text-xs font-semibold ${className}`}>
       <Icon size={14} strokeWidth={2.25} aria-hidden className={s.tone === "working" ? "animate-spin" : ""} />
-      {s.label}
+      {label ?? s.label}
     </span>
   );
 }

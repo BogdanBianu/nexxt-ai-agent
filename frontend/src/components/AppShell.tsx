@@ -5,11 +5,14 @@ import { api } from "../api/client";
 import type { ModuleInfo } from "../types/contracts";
 
 interface Props {
+  // Modulul afișat acum; null pe pagina de start
+  current: string | null;
   onHome: () => void;
+  onModule: (moduleId: string) => void;
   children: ReactNode;
 }
 
-export function AppShell({ onHome, children }: Props) {
+export function AppShell({ current, onHome, onModule, children }: Props) {
   const [modules, setModules] = useState<ModuleInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,20 +39,22 @@ export function AppShell({ onHome, children }: Props) {
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 bg-sun">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-8 px-6 lg:px-10">
-          <button onClick={onHome} className="display shrink-0 text-[22px]">
+          <button onClick={onHome} aria-current={current === null ? "page" : undefined} className="display shrink-0 text-[22px]">
             LexOps
           </button>
 
           <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" aria-label="Module">
             {modules.map((m) => {
-              const active = m.status === "ACTIVE";
-              return active ? (
+              const on = m.module_id === current;
+              return m.status === "ACTIVE" ? (
                 <button
                   key={m.module_id}
-                  onClick={onHome}
+                  onClick={() => onModule(m.module_id)}
                   title={m.description}
-                  aria-current="page"
-                  className="display shrink-0 rounded-md bg-ink px-3.5 py-2 text-sm text-sun"
+                  aria-current={on ? "page" : undefined}
+                  className={`display shrink-0 rounded-md px-3.5 py-2 text-sm transition-colors duration-150 ${
+                    on ? "bg-ink text-sun" : "text-ink hover:bg-ink/10"
+                  }`}
                 >
                   {m.name}
                 </button>

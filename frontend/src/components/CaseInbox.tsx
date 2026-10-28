@@ -1,26 +1,37 @@
-// Legal Inbox: lista dosarelor + lansatorul de scenarii S1..S8. Proprietar: Om4.
+// Lista dosarelor unui modul + încărcare și scenarii de test. Proprietar: Om4.
+// Un document încărcat de aici poate ajunge în alt modul: agentul de primire decide după conținut.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, CircleCheck, ChevronDown, OctagonAlert, Plus, Search, X } from "lucide-react";
 import { api } from "../api/client";
 import type { Case, CaseSummary, ScenarioInfo } from "../types/contracts";
 import { ServerDown } from "./ServerDown";
+import { CoverageBar } from "./SeizurePanels";
+import { coverage, isLifting, SEIZURE, seizureKind } from "../lib/seizure";
 import { UploadDocument } from "./UploadDocument";
-import { caseTitle, dayLabel, DOC_LABEL, EXCEPTION_LABEL, formatAgo, formatRon, formatTime, STATUS_STYLE, type StatusTone } from "../lib/ui";
+import { BLOCKS_MONEY, moduleOf, scenarioModule, statusLabel, typeLabel, copyFor } from "../lib/modules";
+import { caseTitle, dayLabel, EXCEPTION_LABEL, formatAgo, formatRon, formatTime, STATUS_STYLE, type StatusTone } from "../lib/ui";
 
 interface Props {
+  moduleId: string;
   onOpen: (caseId: string, fresh: boolean) => void;
   // Incrementat din exterior (ex. după un review HITL) ca lista să se reîncarce
   refreshKey?: number;
 }
 
-function ScenarioMenu({ onPick, busy }: { onPick: (id: string) => void; busy: boolean }) {
+function ScenarioMenu({ moduleId, label, onPick, busy }: { moduleId: string; label: string; onPick: (id: string) => void; busy: boolean }) {
   const [open, setOpen] = useState(false);
   const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    api.listScenarios().then(setScenarios).catch(() => setScenarios([]));
-  }, []);
+  const load = useCallback(() => {
+    api
+      .listScenarios()
+      .then((list) => setScenarios(list.filter((s) => scenarioModule(s) === moduleId)))
+      .catch(() => setScenarios([]));
+  }, [moduleId]);
+
+  useEffect(load, [load]);
+
 
   useEffect(() => {
     if (!open) return;
@@ -40,7 +51,7 @@ function ScenarioMenu({ onPick, busy }: { onPick: (id: string) => void; busy: bo
     <div ref={ref} className="relative">
       <button
         onClick={() => {
-          if (!scenarios.length) api.listScenarios().then(setScenarios).catch(() => setScenarios([]));
+          if (!scenarios.length) load();
           setOpen((o) => !o);
         }}
         disabled={busy}
@@ -49,12 +60,12 @@ function ScenarioMenu({ onPick, busy }: { onPick: (id: string) => void; busy: bo
         className="inline-flex h-10 items-center gap-2 rounded-md bg-ink pr-3 pl-3.5 text-sm font-semibold text-paper transition-[background-color,transform] duration-150 ease-out hover:bg-ink/85 active:scale-[0.97] disabled:bg-ink/40"
       >
         <Plus size={16} strokeWidth={2.5} aria-hidden />
-        {busy ? "Se procesează…" : "Simulează adresă"}
+        {busy ? "Se procesează…" : label}
         <ChevronDown size={16} aria-hidden className={`transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 z-20 mt-2 w-[22rem] overflow-hidden rounded-md bg-paper shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-1 ring-line">
+        <div role="menu" className="absolute right-0 z-20 mt-2 max-h-[70vh] w-[22rem] overflow-y-auto rounded-md bg-paper shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-1 ring-line">
           <p className="border-b border-line px-4 py-2.5 text-xs text-muted">Alege un scenariu de test. Dosarul trece imediat prin agenți.</p>
           {scenarios.map((s) => (
             <button
@@ -116,15 +127,19 @@ function ReviewCard({ c, detail, onOpen }: { c: CaseSummary; detail?: Case; onOp
           </span>
           <span className="shrink-0 text-muted">{formatAgo(c.created_at)}</span>
         </span>
-        <span className="display mt-3 block text-lg">{c.debtor_name ?? "Debitor neidentificat"}</span>
+        <span className="display mt-3 block text-lg">{c.debtor_name ?? (detail ? caseTitle(detail) : "Debitor neidentificat")}</span>
         <span className="mt-0.5 block truncate text-sm text-muted">
           Dosar {c.case_number ?? "—"}
           {detail?.order?.issuer_name ? `, ${detail.order.issuer_name}` : ""}
         </span>
         <span className="mt-auto flex items-end justify-between gap-3 pt-4">
           <span className="text-sm">
-            <span className="block text-muted">Suma în joc</span>
-            <span className="font-semibold">{detail?.order ? formatRon(detail.order.total_due) : "—"}</span>
+            {detail?.order?.total_due ? (
+              <>
+                <span className="block text-muted">{moduleOf(c) === "sechestre" ? "Plafonul măsurii" : "Suma în joc"}</span>
+                <span className="font-semibold">{formatRon(detail.order.total_due)}</span>
+              </>
+            ) : null}
           </span>
           <span className="inline-flex items-center gap-1 text-sm font-semibold">
             Verifică
@@ -136,7 +151,25 @@ function ReviewCard({ c, detail, onOpen }: { c: CaseSummary; detail?: Case; onOp
   );
 }
 
-export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
+// Înghețat / plafon, cu o bară de acoperire; ridicările nu îngheață nimic
+function SeizureCell({ c, detail }: { c: CaseSummary; detail?: Case }) {
+  if (isLifting(c)) return <span className="text-muted">Deblocat</span>;
+  const cap = detail?.order?.total_due;
+  const share = coverage(c.amount_to_hold, cap);
+  return (
+    <span className="ml-auto block w-36">
+      <span className="font-semibold">{formatRon(c.amount_to_hold)}</span>
+      {cap ? <span className="block text-xs text-muted">din {formatRon(cap)}</span> : null}
+      {share != null && <CoverageBar share={share} className="mt-1.5" />}
+    </span>
+  );
+}
+
+export function CaseInbox({ moduleId, onOpen, refreshKey = 0 }: Props) {
+  const copy = copyFor(moduleId);
+  const money = BLOCKS_MONEY.has(moduleId);
+  // La sechestre felul măsurii și plafonul sunt doar în dosarul complet, deci le cerem pentru toate
+  const seizure = moduleId === "sechestre";
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [details, setDetails] = useState<Record<string, Case>>({});
   const [loaded, setLoaded] = useState(false);
@@ -149,18 +182,18 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
     api
       .listCases()
       .then((c) => {
-        setCases(c);
+        setCases(c.filter((x) => moduleOf(x) === moduleId));
         setLoaded(true);
         setError(null);
       })
       .catch((e: Error) => setError(e.message));
-  }, []);
+  }, [moduleId]);
 
   useEffect(reload, [reload, refreshKey]);
 
   // Pentru dosarele blocate avem nevoie de motiv și emitent, care nu sunt în sumar
   useEffect(() => {
-    const missing = cases.filter((c) => (isReview(c) || !c.debtor_name) && !details[c.case_id]);
+    const missing = cases.filter((c) => (seizure || isReview(c) || !c.debtor_name) && !details[c.case_id]);
     if (!missing.length) return;
     Promise.all(missing.map((c) => api.getCase(c.case_id).catch(() => null))).then((list) =>
       setDetails((d) => {
@@ -169,7 +202,7 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
         return next;
       }),
     );
-  }, [cases, details]);
+  }, [cases, details, seizure]);
 
   async function simulate(scenarioId: string) {
     setBusy(true);
@@ -191,7 +224,9 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
   const q = query.trim().toLowerCase();
   const active = FILTERS.find((f) => f.id === filter)!;
   const rows = sorted.filter(
-    (c) => active.test(c) && (!q || [c.debtor_name, c.case_number].some((v) => v?.toLowerCase().includes(q))),
+    (c) =>
+      active.test(c) &&
+      (!q || [c.debtor_name, c.case_number, details[c.case_id] && caseTitle(details[c.case_id])].some((v) => v?.toLowerCase().includes(q))),
   );
   const groups: { label: string; items: CaseSummary[] }[] = [];
   for (const c of rows) {
@@ -208,11 +243,11 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-muted first-letter:uppercase">{today}</p>
-          <h1 className="display mt-1 text-4xl">Popriri</h1>
+          <h1 className="display mt-1 text-4xl">{copy.title}</h1>
         </div>
         <div className="flex items-center gap-2">
           <UploadDocument onUploaded={(id) => onOpen(id, true)} />
-          <ScenarioMenu onPick={simulate} busy={busy} />
+          <ScenarioMenu moduleId={moduleId} label={copy.simulate} onPick={simulate} busy={busy} />
         </div>
       </div>
 
@@ -239,7 +274,7 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
           {queue.length === 0 ? (
             <p className="mt-3 flex items-center gap-2 text-sm">
               <CircleCheck size={16} aria-hidden />
-              Nimic de verificat. Toate popririle primite au fost procesate automat.
+              {copy.allClear}
             </p>
           ) : (
             <>
@@ -291,8 +326,8 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Caută debitor sau nr. dosar"
-                aria-label="Caută debitor sau număr dosar"
+                placeholder="Caută persoană sau nr. dosar"
+                aria-label="Caută persoană sau număr dosar"
                 className="h-10 w-full rounded-md bg-paper pr-3 pl-9 text-sm ring-1 ring-line-strong outline-none placeholder:text-muted focus:ring-2 focus:ring-ink"
               />
             </label>
@@ -302,10 +337,11 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
             <table className="w-full min-w-[820px] text-sm">
               <thead>
                 <tr className="border-b border-ink text-left text-xs font-semibold text-muted">
-                  <th className="py-2.5 pr-4">Debitor</th>
+                  <th className="py-2.5 pr-4">Persoană</th>
                   <th className="px-4 py-2.5">Nr. dosar</th>
                   <th className="px-4 py-2.5">Status</th>
-                  <th className="px-4 py-2.5 text-right">De indisponibilizat</th>
+                  <th className="px-4 py-2.5">Tip</th>
+                  {money && <th className="px-4 py-2.5 text-right">{seizure ? "Înghețat din plafon" : "De indisponibilizat"}</th>}
                   <th className="px-4 py-2.5">Primit</th>
                   <th className="w-24" />
                 </tr>
@@ -313,11 +349,11 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
               {loaded && rows.length === 0 && (
                 <tbody>
                   <tr>
-                    <td colSpan={6} className="py-14 text-center">
+                    <td colSpan={money ? 7 : 6} className="py-14 text-center">
                       {cases.length === 0 ? (
                         <>
-                          <p className="font-semibold">Nicio adresă de poprire primită</p>
-                          <p className="mt-1 text-muted">Folosește „Simulează adresă” ca să trimiți un scenariu de test prin agenți.</p>
+                          <p className="font-semibold">{copy.empty}</p>
+                          <p className="mt-1 text-muted">Trage un PDF oriunde pe pagină sau folosește „{copy.simulate}” ca să trimiți un scenariu de test.</p>
                         </>
                       ) : (
                         <>
@@ -341,7 +377,7 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
               {groups.map((g) => (
                 <tbody key={g.label}>
                   <tr>
-                    <th colSpan={6} scope="rowgroup" className="pt-6 pb-2 text-left text-xs font-semibold first-letter:uppercase">
+                    <th colSpan={money ? 7 : 6} scope="rowgroup" className="pt-6 pb-2 text-left text-xs font-semibold first-letter:uppercase">
                       {g.label}
                       <span className="ml-2 font-normal text-muted">{g.items.length}</span>
                     </th>
@@ -366,22 +402,37 @@ export function CaseInbox({ onOpen, refreshKey = 0 }: Props) {
                           >
                             {c.debtor_name ?? (details[c.case_id] ? caseTitle(details[c.case_id]) : "…")}
                           </button>
-                          <div className="text-xs text-muted">
-                            {DOC_LABEL[c.doc_type]}
-                            {c.scenario_id ? `, scenariu ${c.scenario_id}` : ""}
-                          </div>
+                          {c.scenario_id && <div className="text-xs text-muted">Scenariu {c.scenario_id}</div>}
                         </td>
                         <td className="px-4 py-3.5 font-mono text-[13px]">{c.case_number ?? "—"}</td>
                         <td className="px-4 py-3.5">
                           <span className={`flex items-center gap-2 font-medium ${problem ? "text-danger-ink" : ""}`}>
                             <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[st.tone]}`} aria-hidden />
-                            {st.label}
+                            {statusLabel(c)}
                           </span>
                           {reason && <div className="pl-4 text-xs text-danger-ink/80">{reason}</div>}
                         </td>
-                        <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                          {problem ? <span className="text-muted">Blocat</span> : <span className="font-semibold">{c.amount_to_hold != null ? formatRon(c.amount_to_hold) : "—"}</span>}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {seizure && details[c.case_id] ? (
+                            <>
+                              {isLifting(c) ? `Ridicare ${SEIZURE[seizureKind(details[c.case_id])].label.toLowerCase()}` : SEIZURE[seizureKind(details[c.case_id])].label}
+                              <div className="text-xs text-muted">{SEIZURE[seizureKind(details[c.case_id])].basis}</div>
+                            </>
+                          ) : (
+                            typeLabel(c)
+                          )}
                         </td>
+                        {money && (
+                          <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                            {problem ? (
+                              <span className="text-muted">Blocat</span>
+                            ) : seizure ? (
+                              <SeizureCell c={c} detail={details[c.case_id]} />
+                            ) : (
+                              <span className="font-semibold">{c.amount_to_hold != null ? formatRon(c.amount_to_hold) : "—"}</span>
+                            )}
+                          </td>
+                        )}
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           {formatAgo(c.created_at)}
                           <div className="text-xs text-muted">{formatTime(c.created_at).slice(0, 5)}</div>

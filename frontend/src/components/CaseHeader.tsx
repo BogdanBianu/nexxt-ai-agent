@@ -11,6 +11,10 @@ const MODULE_LABEL: Record<string, string> = {
   gdpr: "Cereri GDPR",
 };
 import { StatusChip } from "./StatusChip";
+import { statusLabel } from "../lib/modules";
+import { isSeizure } from "../lib/seizure";
+import { SeizureKindLine } from "./SeizurePanels";
+import { AuthorityKindLine } from "./AuthorityPanels";
 
 const CREDITOR_LABEL: Record<CreditorType, string> = {
   INTRETINERE: "Pensie de întreținere",
@@ -39,8 +43,10 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3">
         <h1 className="display text-[2rem]">{caseTitle(data)}</h1>
-        {!pending && <StatusChip status={data.status} />}
+        {!pending && <StatusChip status={data.status} label={statusLabel(data)} />}
       </div>
+      {isSeizure(data) && <SeizureKindLine data={data} />}
+      {data.module_id === "autoritati" && <AuthorityKindLine data={data} />}
 
       {notice && !pending && (
         <div role="status" className="mt-5 flex items-center gap-3 rounded-md border border-ink/20 bg-sun-soft px-5 py-3.5 text-sm">
@@ -75,7 +81,9 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
                 <li key={e.code + e.message}>{humanize(e.message)}</li>
               ))}
             </ul>
-            <p className="mt-2 text-sm font-semibold text-danger-ink">Nu s-a blocat nicio sumă. Un ofițer trebuie să verifice dosarul.</p>
+            <p className="mt-2 text-sm font-semibold text-danger-ink">
+              {isSeizure(data) ? "Nu s-a înghețat nicio sumă." : "Nu s-a blocat nicio sumă."} Un ofițer trebuie să verifice dosarul.
+            </p>
           </div>
           <a
             href="#workbench"

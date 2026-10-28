@@ -90,9 +90,9 @@ function UploadDialog({ initialFile, onClose, onUploaded }: DialogProps) {
         <div className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
           <div>
             <h2 id="upload-title" className="display text-xl">
-              Încarcă o adresă de poprire
+              Încarcă un document
             </h2>
-            <p className="mt-0.5 text-sm text-muted">Agenții citesc documentul și îl procesează ca pe unul primit de la executor.</p>
+            <p className="mt-0.5 text-sm text-muted">Poprire, cerere de la autorități sau alt act. Agenții recunosc singuri tipul și îl procesează.</p>
           </div>
           <button onClick={onClose} disabled={busy} aria-label="Închide" className="grid h-8 w-8 shrink-0 place-items-center rounded-md hover:bg-canvas">
             <X size={18} aria-hidden />
@@ -119,7 +119,7 @@ function UploadDialog({ initialFile, onClose, onUploaded }: DialogProps) {
               }`}
             >
               <Upload size={28} strokeWidth={1.75} aria-hidden />
-              <p className="mt-3 font-semibold">Trage aici adresa</p>
+              <p className="mt-3 font-semibold">Trage aici documentul</p>
               <p className="mt-0.5 text-sm text-muted">sau</p>
               <button
                 onClick={() => inputRef.current?.click()}
@@ -174,7 +174,7 @@ function UploadDialog({ initialFile, onClose, onUploaded }: DialogProps) {
               <span className="mt-1.5 block text-xs text-muted">
                 {detected
                   ? `Detectat din numele fișierului. Core Banking e simulat, deci clientul și conturile vin din scenariul ${detected}.`
-                  : "Core Banking e simulat: alege scenariul ale cărui conturi corespund debitorului din adresă, altfel debitorul nu va fi găsit."}
+                  : "Core Banking e simulat: alege scenariul ale cărui conturi corespund persoanei din document, altfel nu va fi găsită."}
               </span>
             </label>
           )}
@@ -256,7 +256,7 @@ export function UploadDocument({ onUploaded }: { onUploaded: (caseId: string) =>
         className="inline-flex h-10 items-center gap-2 rounded-md bg-paper px-3.5 text-sm font-semibold ring-1 ring-line-strong transition-[box-shadow,transform] duration-150 ease-out hover:ring-ink active:scale-[0.97]"
       >
         <Upload size={16} aria-hidden />
-        Încarcă adresă
+        Încarcă document
       </button>
 
       {dragging && !open && (
@@ -264,7 +264,7 @@ export function UploadDocument({ onUploaded }: { onUploaded: (caseId: string) =>
           <div className="flex flex-col items-center rounded-lg border-2 border-dashed border-ink bg-paper px-12 py-10 text-center">
             <Upload size={32} strokeWidth={1.75} aria-hidden />
             <p className="display mt-3 text-2xl">Lasă fișierul aici</p>
-            <p className="mt-1 text-sm text-muted">Adresa de poprire, PDF sau .txt</p>
+            <p className="mt-1 text-sm text-muted">Orice document primit, PDF sau .txt</p>
           </div>
         </div>
       )}

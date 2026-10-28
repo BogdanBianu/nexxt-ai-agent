@@ -1,5 +1,5 @@
 // Disecția extrasului de cont linie cu linie + regulile aplicate. Proprietar: Om4.
-// Fiecare rând are o bară: negru = partea care se oprește, galben = partea protejată.
+// Fiecare rând are o bară: negru = partea care se oprește (la sechestru: se îngheață), galben = partea protejată.
 import { OctagonAlert } from "lucide-react";
 import type { Case, RuleApplication } from "../types/contracts";
 import { CATEGORY_GROUP, CATEGORY_LABEL, formatDate, formatRon, GROUP_LABEL } from "../lib/ui";
@@ -22,7 +22,7 @@ function SplitBar({ share }: { share: number }) {
   );
 }
 
-export function AccountDissection({ data }: { data: Case }) {
+export function AccountDissection({ data, seizure = false }: { data: Case; seizure?: boolean }) {
   const txs = data.classified_transactions;
   const rules = data.decision?.rules_applied ?? [];
   // Tranzacțiile citate ca dovadă într-o excepție nerezolvată
@@ -36,7 +36,7 @@ export function AccountDissection({ data }: { data: Case }) {
         </h2>
         <div className="flex gap-5 text-sm text-muted">
           <span className="flex items-center gap-2">
-            <span className="h-2 w-4 rounded-sm bg-ink" /> Se oprește
+            <span className="h-2 w-4 rounded-sm bg-ink" /> {seizure ? "Se îngheață" : "Se oprește"}
           </span>
           <span className="flex items-center gap-2">
             <span className="h-2 w-4 rounded-sm bg-sun ring-1 ring-ink/10" /> Rămâne clientului
@@ -63,7 +63,7 @@ export function AccountDissection({ data }: { data: Case }) {
                 <th className="px-4 py-2.5 font-medium">Categorie</th>
                 <th className="px-4 py-2.5 font-medium">Temei legal</th>
                 <th className="px-4 py-2.5 text-right font-medium">Sumă</th>
-                <th className="w-44 px-4 py-2.5 font-medium">Cotă urmăribilă</th>
+                <th className="w-44 px-4 py-2.5 font-medium">{seizure ? "Cotă înghețată" : "Cotă urmăribilă"}</th>
               </tr>
             </thead>
             <tbody>
@@ -87,7 +87,7 @@ export function AccountDissection({ data }: { data: Case }) {
                         {isFlagged && <OctagonAlert size={15} className="text-danger" aria-label="Clasificare contestată de agentul de anomalii" />}
                       </div>
                       <div className="text-xs text-muted" title={tx.rationale}>
-                        {GROUP_LABEL[CATEGORY_GROUP[tx.category]]}
+                        {seizure ? GROUP_LABEL[CATEGORY_GROUP[tx.category]].replace("oprește", "îngheață") : GROUP_LABEL[CATEGORY_GROUP[tx.category]]}
                       </div>
                     </td>
                     <td className="px-4 py-3 align-top">
@@ -107,7 +107,9 @@ export function AccountDissection({ data }: { data: Case }) {
                       ) : (
                         <div className="flex items-center gap-3 pt-1.5">
                           <SplitBar share={share} />
-                          <span className="w-10 shrink-0 text-right text-xs font-medium">{Math.round(share * 100)}%</span>
+                          <span className="w-14 shrink-0 text-right text-xs font-medium">
+                            {seizure && share >= 1 ? "Integral" : `${Math.round(share * 100)}%`}
+                          </span>
                         </div>
                       )}
                     </td>
