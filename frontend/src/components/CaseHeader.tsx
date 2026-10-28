@@ -1,8 +1,8 @@
 // Antetul dosarului deschis: titlu + alertă, cifrele cheie și fișa dosarului. Proprietar: Om4.
 import type { ReactNode } from "react";
-import { ArrowDown, ArrowLeft, CircleCheck, Info, OctagonAlert } from "lucide-react";
+import { ArrowDown, ArrowLeft, CircleCheck, Info, OctagonAlert, TriangleAlert } from "lucide-react";
 import type { Case, CreditorType } from "../types/contracts";
-import { caseTitle, DOC_LABEL, formatDate, formatRon, humanize } from "../lib/ui";
+import { caseTitle, DOC_LABEL, formatDate, formatRon, humanize, STATUS_STYLE } from "../lib/ui";
 
 const MODULE_LABEL: Record<string, string> = {
   autoritati: "Cereri autorități",
@@ -15,6 +15,7 @@ import { statusLabel } from "../lib/modules";
 import { isSeizure } from "../lib/seizure";
 import { SeizureKindLine } from "./SeizurePanels";
 import { AuthorityKindLine } from "./AuthorityPanels";
+import { InsolvencyKindLine } from "./InsolvencyPanels";
 
 const CREDITOR_LABEL: Record<CreditorType, string> = {
   INTRETINERE: "Pensie de întreținere",
@@ -33,6 +34,8 @@ interface Props {
 
 export function CaseHeader({ data, pending, onBack, notice }: Props) {
   const open = pending ? [] : data.exceptions.filter((e) => !e.resolved);
+  // Doar atenționări: agenții au terminat, dar ofițerul trebuie să știe (ex. plăți după deschiderea insolvenței)
+  const stopped = STATUS_STYLE[data.status].tone === "danger";
 
   return (
     <div className="pt-6">
@@ -47,6 +50,7 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
       </div>
       {isSeizure(data) && <SeizureKindLine data={data} />}
       {data.module_id === "autoritati" && <AuthorityKindLine data={data} />}
+      {data.module_id === "insolventa" && <InsolvencyKindLine data={data} />}
 
       {notice && !pending && (
         <div role="status" className="mt-5 flex items-center gap-3 rounded-md border border-ink/20 bg-sun-soft px-5 py-3.5 text-sm">
@@ -69,7 +73,24 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
         </div>
       )}
 
-      {open.length > 0 && (
+      {open.length > 0 && !stopped && (
+        <div role="status" className="mt-5 flex gap-3.5 rounded-md border border-danger/40 bg-danger-soft px-5 py-4">
+          <TriangleAlert size={20} strokeWidth={2.25} className="mt-0.5 shrink-0 text-danger" aria-hidden />
+          <div className="min-w-0">
+            <p className="font-bold text-danger-ink">
+              {open.length === 1 ? "Procesat automat, cu o atenționare" : `Procesat automat, cu ${open.length} atenționări`}
+            </p>
+            <ul className="mt-1 space-y-1 text-sm">
+              {open.map((e) => (
+                <li key={e.code + e.message}>{humanize(e.message)}</li>
+              ))}
+            </ul>
+            <p className="mt-2 text-sm text-danger-ink">Atenționările sunt incluse în răspuns; nu e nevoie de o decizie.</p>
+          </div>
+        </div>
+      )}
+
+      {open.length > 0 && stopped && (
         <div role="alert" className="mt-5 flex gap-3.5 rounded-md border border-danger/40 bg-danger-soft px-5 py-4">
           <OctagonAlert size={20} strokeWidth={2.25} className="mt-0.5 shrink-0 text-danger" aria-hidden />
           <div className="min-w-0">

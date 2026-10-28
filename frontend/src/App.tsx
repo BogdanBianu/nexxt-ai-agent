@@ -6,6 +6,7 @@ import { AgentPipeline } from "./components/AgentPipeline";
 import { AppShell } from "./components/AppShell";
 import { CaseFacts, CaseFigures, CaseHeader } from "./components/CaseHeader";
 import { AuditTrail } from "./components/AuditTrail";
+import { InsolvencyAccounts, InsolvencyFacts, InsolvencyFigures, InsolvencyMain } from "./components/InsolvencyPanels";
 import { AuthorityFacts, AuthorityFigures, AuthorityReport, AuthorityRequest } from "./components/AuthorityPanels";
 import { CaseInbox } from "./components/CaseInbox";
 import { DocumentViewer } from "./components/DocumentViewer";
@@ -89,8 +90,8 @@ export default function App() {
   // Documentele redirecționate și cererile autorităților nu au sume de blocat, fișă de poprire sau calcul pe extras
   const seizure = !!current && isSeizure(current);
   const authority = current?.module_id === "autoritati";
-  // Insolvența nu are încă panouri proprii; cifrele de poprire ar fi greșite acolo
-  const lean = routed || (seizure && isLifting(current)) || current?.module_id === "insolventa";
+  const insolvency = current?.module_id === "insolventa";
+  const lean = routed || (seizure && isLifting(current));
   const activeTab: Tab = lean && tab === "analysis" ? "documents" : tab;
   const navModule = selectedId ? (current ? moduleOf(current) : view) : view;
 
@@ -131,13 +132,16 @@ export default function App() {
               <div className="min-w-0 space-y-10">
                 {current && seizure && !isLifting(current) && <SeizureFigures data={current} pending={!replayDone} />}
                 {current && authority && <AuthorityFigures data={current} pending={!replayDone} />}
-                {current && !seizure && !authority && !lean && <CaseFigures data={current} pending={!replayDone} />}
+                {current && insolvency && <InsolvencyFigures data={current} pending={!replayDone} />}
+                {current && !seizure && !authority && !insolvency && !lean && <CaseFigures data={current} pending={!replayDone} />}
                 {current && replayDone && <HitlWorkbench data={current} onUpdated={onReviewed} />}
                 {current && seizure && replayDone && <SeizureLifecycle data={current} onOpen={(id) => open(id, false)} />}
                 {current && seizure && <SeizureFacts data={current} />}
                 {current && authority && replayDone && <AuthorityRequest data={current} />}
                 {current && authority && <AuthorityFacts data={current} />}
-                {current && !seizure && !authority && !lean && <CaseFacts data={current} />}
+                {current && insolvency && replayDone && <InsolvencyMain data={current} />}
+                {current && insolvency && <InsolvencyFacts data={current} />}
+                {current && !seizure && !authority && !insolvency && !lean && <CaseFacts data={current} />}
                 {current && replayDone && (
                   <div>
                     <div role="tablist" aria-label="Secțiuni dosar" className="flex gap-6 border-b border-line">
@@ -151,14 +155,20 @@ export default function App() {
                             activeTab === t.id ? "border-ink" : "border-transparent text-muted hover:text-ink"
                           }`}
                         >
-                          {authority && t.id === "analysis" ? "Date comunicate" : t.label}
+                          {t.id === "analysis" && authority ? "Date comunicate" : t.id === "analysis" && insolvency ? "Conturi" : t.label}
                           {t.id === "audit" && current.audit?.length ? <span className="ml-1.5 font-medium text-muted">{current.audit.length}</span> : null}
                         </button>
                       ))}
                     </div>
                     <div role="tabpanel" className="pt-6">
                       {activeTab === "analysis" &&
-                        (authority ? <AuthorityReport data={current} /> : <AccountDissection data={current} seizure={seizure} />)}
+                        (authority ? (
+                          <AuthorityReport data={current} />
+                        ) : insolvency ? (
+                          <InsolvencyAccounts data={current} />
+                        ) : (
+                          <AccountDissection data={current} seizure={seizure} />
+                        ))}
                       {activeTab === "documents" && <DocumentViewer data={current} />}
                       {activeTab === "audit" && (
                         <div className="space-y-10">

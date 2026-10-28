@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Check, LoaderCircle, OctagonAlert, Undo2 } from "lucide-react";
 import { api } from "../api/client";
 import type { Case, ClassifiedTransaction, ExceptionFlag, IncomeCategory, TxOverride } from "../types/contracts";
-import { CATEGORY_LABEL, EXCEPTION_LABEL, formatDate, formatRon, humanize } from "../lib/ui";
+import { CATEGORY_LABEL, EXCEPTION_LABEL, formatDate, formatRon, humanize, STATUS_STYLE } from "../lib/ui";
 
 // Excepții pe care backend-ul nu le poate accepta: dosarul trebuie returnat emitentului
 const NOT_APPROVABLE: Record<string, string> = {
@@ -194,7 +194,8 @@ export function HitlWorkbench({ data, onUpdated }: Props) {
     }
   }
 
-  if (open.length === 0) return null;
+  // Dosarele procesate cu simple atenționări nu așteaptă nicio decizie
+  if (open.length === 0 || STATUS_STYLE[data.status].tone !== "danger") return null;
 
   return (
     <section id="workbench" aria-labelledby="workbench-title" className="scroll-mt-24 rounded-lg ring-2 ring-ink">
@@ -230,7 +231,11 @@ export function HitlWorkbench({ data, onUpdated }: Props) {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
-                placeholder="Ex.: Angajatorul a plătit 6.000 lei salariu lunar în ultimele două luni; suma din octombrie e același salariu."
+                placeholder={
+                  data.module_id === "popriri" || !data.module_id
+                    ? "Ex.: Angajatorul a plătit 6.000 lei salariu lunar în ultimele două luni; suma din octombrie e același salariu."
+                    : "Ex.: Am verificat documentul original și situația din cont; decizia e conformă cu actul primit."
+                }
                 className="mt-1.5 block w-full resize-y rounded-md border border-line-strong bg-paper px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-ink focus:ring-1 focus:ring-ink"
               />
             </label>

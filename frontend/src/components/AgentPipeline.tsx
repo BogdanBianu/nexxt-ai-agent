@@ -139,7 +139,7 @@ export function AgentPipeline({ caseId, animate, data, onReplayDone, runKey = 0 
           Agenți
         </h2>
         <span aria-live="polite" className={`text-sm ${problems ? "font-semibold text-danger-ink" : "text-muted"}`}>
-          {loadError ? "Indisponibil" : !doneFlag ? "Procesare în curs…" : problems ? `${problems === 1 ? "O problemă" : `${problems} probleme`} găsite` : "Fără probleme"}
+          {loadError ? "Indisponibil" : !doneFlag ? "Procesare în curs…" : problems ? (problems === 1 ? "O problemă găsită" : `${problems} probleme găsite`) : "Fără probleme"}
         </span>
       </div>
 
