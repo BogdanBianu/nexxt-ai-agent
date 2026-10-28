@@ -7,9 +7,10 @@ export type DocType =
   | "POPRIRE_MODIFICARE"
   | "CERERE_INFORMATII"
   | "CERERE_AUTORITATE"
+  | "CERERE_GDPR"
   | "NECUNOSCUT";
 
-export type IssuerType = "EXECUTOR" | "ANAF" | "ORGAN_FISCAL_LOCAL" | "POLITIE" | "PARCHET" | "ALTUL";
+export type IssuerType = "EXECUTOR" | "ANAF" | "ORGAN_FISCAL_LOCAL" | "POLITIE" | "PARCHET" | "ANSPDCP" | "PERSOANA_FIZICA" | "ALTUL";
 export type CreditorType = "INTRETINERE" | "FISCAL" | "COMERCIAL";
 
 export type IncomeCategory =

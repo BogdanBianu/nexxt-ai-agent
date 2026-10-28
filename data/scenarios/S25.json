@@ -1,0 +1,55 @@
+{
+  "scenario_id": "S25",
+  "title": "Cerere de acces la date (Art. 15 GDPR) — Dreptul de informare client",
+  "description": "Client activ Raiffeisen Bank solicită conform Art. 15 GDPR raportul complet al datelor prelucrate și conturilor deschise. Router-ul o clasifică drept CERERE_GDPR și o trimite către modulul activ 'gdpr'. Se generează adresa oficială DPO cu inventarul conturilor și 0.00 RON blocați.",
+  "document": {
+    "document_id": "DOC-S25",
+    "filename": "cerere_acces_gdpr_art15.txt",
+    "received_at": "2026-10-28T14:00:00Z",
+    "content_type": "text/plain",
+    "text": "CERERE DE EXERCITARE A DREPTULUI DE ACCES (Art. 15 GDPR)\nData: 28.10.2026\nCătre: RAIFFEISEN BANK S.A. — Responsabilul cu Protecția Datelor (DPO)\n\nSubsemnatul POPESCU ION, CNP: 1850615400011, titular de cont bancar,\nîn temeiul Art. 15 din Regulamentul (UE) 2016/679 (GDPR), vă solicit să-mi puneți la dispoziție o copie a datelor mele cu caracter personal prelucrate de bancă, inclusiv lista conturilor bancare, scopurile prelucrării și categoriile de destinatari legali.\n\nSemnătură olografă: Popescu Ion (L.S.)",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-GDPR-01",
+        "full_name": "POPESCU ION",
+        "national_id": "1850615400011",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Mihai Eminescu nr. 12, București"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO49RZBR0000060012345678",
+        "customer_id": "CUST-GDPR-01",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 2000.0,
+        "current_balance": 8500.0
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-GDPR-1",
+        "iban": "RO49RZBR0000060012345678",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 6500.0,
+        "counterparty_name": "ANGAPROD SRL",
+        "description": "Salariu luna septembrie"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "CERERE_GDPR",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 0.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

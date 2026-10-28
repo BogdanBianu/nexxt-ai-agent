@@ -13,6 +13,7 @@ class DocType(str, Enum):
     POPRIRE_MODIFICARE = "POPRIRE_MODIFICARE"
     CERERE_INFORMATII = "CERERE_INFORMATII"      # executorul cere doar informații despre conturi
     CERERE_AUTORITATE = "CERERE_AUTORITATE"      # Poliție / Parchet / DNA -> alt modul (roadmap)
+    CERERE_GDPR = "CERERE_GDPR"                  # Drepturi GDPR (Art. 15-22) / Solicitări ANSPDCP
     NECUNOSCUT = "NECUNOSCUT"
 
 
@@ -22,6 +23,8 @@ class IssuerType(str, Enum):
     ORGAN_FISCAL_LOCAL = "ORGAN_FISCAL_LOCAL"
     POLITIE = "POLITIE"
     PARCHET = "PARCHET"
+    ANSPDCP = "ANSPDCP"                          # Autoritatea de Supraveghere Prelucrare Date
+    PERSOANA_FIZICA = "PERSOANA_FIZICA"          # Solicitant persoană vizată
     ALTUL = "ALTUL"
 
 

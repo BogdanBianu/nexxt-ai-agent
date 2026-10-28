@@ -72,6 +72,7 @@ export const DOC_LABEL: Record<DocType, string> = {
   POPRIRE_MODIFICARE: "Modificare poprire",
   CERERE_INFORMATII: "Cerere informații",
   CERERE_AUTORITATE: "Cerere autoritate",
+  CERERE_GDPR: "Cerere GDPR",
   NECUNOSCUT: "Necunoscut",
 };
 

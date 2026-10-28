@@ -10,6 +10,14 @@ from app.core.validators import normalize_text
 
 _KEYWORDS: list[tuple[DocType, list[str]]] = [
     # Ordinea contează: cele mai specifice primele
+    (DocType.CERERE_GDPR, [
+        "REGULAMENTUL (UE) 2016/679", "REGULAMENTULUI (UE) 2016/679", "REGULAMENTUL 679/2016",
+        "REGULAMENTUL GENERAL PRIVIND PROTECTIA DATELOR", "DREPTUL DE ACCES", "DREPTUL LA ACCES",
+        "DREPTUL LA STERGERE", "DREPTUL DE A FI UITAT", "STERGEREA DATELOR", "DREPTUL LA OPOZITIE",
+        "DREPTUL LA PORTABILITATE", "ART. 15 DIN REGULAMENT", "ART. 17 DIN REGULAMENT",
+        "ART. 21 DIN REGULAMENT", "ANSPDCP", "AUTORITATEA NATIONALA DE SUPRAVEGHERE A PRELUCRARII DATELOR",
+        "PROTECTIA DATELOR CU CARACTER PERSONAL", "GDPR",
+    ]),
     (DocType.CERERE_AUTORITATE, [
         "INSPECTORATUL DE POLITIE", "INSPECTORATUL GENERAL AL POLITIEI", "PARCHETUL",
         "DIRECTIA NATIONALA ANTICORUPTIE", "DIICOT", "DOSAR PENAL", "URMARIRE PENALA",
@@ -40,6 +48,7 @@ Clasifici documentul primit într-una din categoriile:
 - POPRIRE_MODIFICARE: adresă de modificare a cuantumului sumei poprite.
 - CERERE_INFORMATII: solicitare de informații de la executor fără indisponibilizare de sume.
 - CERERE_AUTORITATE: solicitare de la Poliție (IGPR/IPJ), Parchet, DNA, DIICOT într-un dosar penal (se rutează către modulul Cereri Autorități).
+- CERERE_GDPR: cerere privind protecția datelor (Regulamentul UE 2016/679 - drept de acces Art. 15, ștergere Art. 17, opoziție marketing Art. 21 sau solicitare ANSPDCP).
 - NECUNOSCUT: documentul nu se încadrează în niciuna din categoriile de mai sus.
 
 Returnează JSON cu formatul:
@@ -57,10 +66,9 @@ def classify_document(doc: IncomingDocument, emit: EmitFn) -> tuple[DocType, flo
         hit = next((k for k in keys if k in text), None)
         if hit:
             reason = f"Expresie cheie identificată în document: „{hit.lower()}”"
-            target_module = "popriri (PopririZero)" if doc_type in (
-                DocType.POPRIRE_INFIINTARE, DocType.POPRIRE_SISTARE,
-                DocType.POPRIRE_MODIFICARE, DocType.CERERE_INFORMATII,
-            ) else "autoritati (Cereri autorități)"
+            mod_name = "gdpr (Cereri GDPR)" if doc_type == DocType.CERERE_GDPR else ("popriri (PopririZero)" if doc_type in (DocType.POPRIRE_INFIINTARE, DocType.POPRIRE_SISTARE, DocType.POPRIRE_MODIFICARE, DocType.CERERE_INFORMATII) else "autoritati (Cereri autorități)")
+            target_module = mod_name
+
             emit(AgentName.INTAKE_ROUTER, AgentStatus.COMPLETED,
                  f"Document clasificat: {doc_type.value} → {target_module}",
                  {"doc_type": doc_type.value, "confidence": 0.96, "method": "KEYWORD",
