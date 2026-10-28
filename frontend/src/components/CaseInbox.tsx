@@ -1,7 +1,7 @@
 // Lista dosarelor unui modul + încărcare și scenarii de test. Proprietar: Om4.
 // Un document încărcat de aici poate ajunge în alt modul: agentul de primire decide după conținut.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, CircleCheck, ChevronDown, Layers, OctagonAlert, Plus, RotateCcw, Search, X } from "lucide-react";
+import { ArrowRight, CircleCheck, ChevronDown, OctagonAlert, Plus, Search, X } from "lucide-react";
 import { api } from "../api/client";
 import type { Case, CaseSummary, ScenarioInfo } from "../types/contracts";
 import { ServerDown } from "./ServerDown";
@@ -174,7 +174,6 @@ export function CaseInbox({ moduleId, onOpen, refreshKey = 0 }: Props) {
   const [details, setDetails] = useState<Record<string, Case>>({});
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [batchProgress, setBatchProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [query, setQuery] = useState("");
@@ -218,38 +217,6 @@ export function CaseInbox({ moduleId, onOpen, refreshKey = 0 }: Props) {
     }
   }
 
-  async function simulateAll() {
-    setBusy(true);
-    setError(null);
-    try {
-      const scenarios = await api.listScenarios();
-      for (let i = 0; i < scenarios.length; i++) {
-        setBatchProgress(`${i + 1}/${scenarios.length}`);
-        await api.createFromScenario(scenarios[i].scenario_id);
-      }
-      reload();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBatchProgress(null);
-      setBusy(false);
-    }
-  }
-
-  async function resetAll() {
-    setBusy(true);
-    setError(null);
-    try {
-      await api.resetCases();
-      setCases([]);
-      setDetails({});
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const sorted = [...cases].sort((a, b) => b.created_at.localeCompare(a.created_at));
   // Coada: cele mai vechi întâi, ca nimic să nu stea uitat
   const queue = sorted.filter(isReview).reverse();
@@ -278,29 +245,9 @@ export function CaseInbox({ moduleId, onOpen, refreshKey = 0 }: Props) {
           <p className="text-sm text-muted first-letter:uppercase">{today}</p>
           <h1 className="display mt-1 text-4xl">{copy.title}</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          {cases.length > 0 && (
-            <button
-              onClick={resetAll}
-              disabled={busy}
-              title="Șterge din memorie toate adresele procesate și popririle înregistrate"
-              className="inline-flex h-10 items-center gap-1.5 rounded-md bg-paper px-3 text-sm font-semibold text-muted ring-1 ring-line transition-[color,box-shadow,transform] duration-150 ease-out hover:text-ink hover:ring-ink active:scale-[0.97] disabled:opacity-40"
-            >
-              <RotateCcw size={15} aria-hidden />
-              Resetează
-            </button>
-          )}
+        <div className="flex items-center gap-2">
           <UploadDocument onUploaded={(id) => onOpen(id, true)} />
-          <button
-            onClick={simulateAll}
-            disabled={busy}
-            title="Rulează toate scenariile de test; fiecare ajunge în modulul lui"
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-sun px-3.5 text-sm font-semibold text-ink ring-1 ring-ink/15 transition-[background-color,transform] duration-150 ease-out hover:bg-sun/85 active:scale-[0.97] disabled:opacity-40"
-          >
-            <Layers size={16} aria-hidden />
-            {batchProgress ? `Se simulează (${batchProgress})…` : "Simulează toate"}
-          </button>
-                    <ScenarioMenu moduleId={moduleId} label={copy.simulate} onPick={simulate} busy={busy} />
+          <ScenarioMenu moduleId={moduleId} label={copy.simulate} onPick={simulate} busy={busy} />
         </div>
       </div>
 

@@ -40,10 +40,6 @@ export const api = {
       method: "POST",
       body: JSON.stringify(review),
     }),
-  resetCases: () =>
-    json<{ status: string }>("/api/cases/reset", {
-      method: "POST",
-    }),
 };
 
 // POST /api/cases/upload (multipart): fără Content-Type explicit, browserul pune boundary-ul singur
