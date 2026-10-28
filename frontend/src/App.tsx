@@ -13,6 +13,7 @@ import { DocumentViewer } from "./components/DocumentViewer";
 import { Home } from "./components/Home";
 import { HitlWorkbench, ReviewHistory } from "./components/HitlWorkbench";
 import { SeizureFacts, SeizureFigures, SeizureLifecycle } from "./components/SeizurePanels";
+import { PageTransition, type TransitionRequest } from "./components/PageTransition";
 import { ServerDown } from "./components/ServerDown";
 import type { Case } from "./types/contracts";
 import { moduleOf } from "./lib/modules";
@@ -20,6 +21,14 @@ import { isLifting, isSeizure } from "./lib/seizure";
 import { formatRon } from "./lib/ui";
 
 type Tab = "analysis" | "documents" | "audit";
+
+// Cuvântul mare din tranziția spre fiecare modul: unul singur, care acoperă toată categoria
+const MODULE_WORD: Record<string, string> = {
+  popriri: "Popriri",
+  autoritati: "Autorități",
+  sechestre: "Sechestre",
+  insolventa: "Insolvență",
+};
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "analysis", label: "Analiză" },
@@ -37,6 +46,8 @@ export default function App() {
   const [runKey, setRunKey] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("analysis");
+  // Intrarea pe site pornește cu tranziția galbenă
+  const [transition, setTransition] = useState<TransitionRequest | null>({ key: 0, intro: true });
 
   const open = useCallback((caseId: string, fresh: boolean) => {
     setSelectedId(caseId);
@@ -75,6 +86,18 @@ export default function App() {
     setCurrent(null);
     window.scrollTo({ top: 0 });
   }, []);
+
+  // Navigarea din meniu trece prin tranziția galbenă; pagina se schimbă când ecranul e acoperit
+  const toHome = useCallback(() => {
+    setTransition((t) => t ?? { key: Date.now(), word: null, onCovered: home });
+  }, [home]);
+
+  const toModule = useCallback(
+    (moduleId: string) => {
+      setTransition((t) => t ?? { key: Date.now(), word: MODULE_WORD[moduleId] ?? null, onCovered: () => goModule(moduleId) });
+    },
+    [goModule],
+  );
 
   // „Toate dosarele” duce la lista modulului dosarului, chiar dacă a fost deschis de pe pagina de start
   const back = useCallback(() => {
@@ -115,7 +138,7 @@ export default function App() {
   }, [loadCase]);
 
   return (
-    <AppShell current={navModule} onHome={home} onModule={goModule}>
+    <AppShell current={navModule} onHome={toHome} onModule={toModule}>
       {!selectedId ? (
         view ? (
           <CaseInbox key={view} moduleId={view} onOpen={open} />
@@ -187,6 +210,7 @@ export default function App() {
           </>
         )
       )}
+      {transition && <PageTransition request={transition} onDone={() => setTransition(null)} />}
     </AppShell>
   );
 }

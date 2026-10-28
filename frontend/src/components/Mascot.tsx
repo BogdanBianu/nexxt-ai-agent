@@ -83,7 +83,7 @@ export function Mascot({ inline = false }: { inline?: boolean }) {
     const t = window.setTimeout(() => {
       greeted = true;
       speak(GREETING);
-    }, 1500);
+    }, 3400); // după tranziția galbenă de intrare
     return () => window.clearTimeout(t);
   }, [speak]);
 
