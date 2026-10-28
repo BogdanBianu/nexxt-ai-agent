@@ -15,7 +15,7 @@ import uuid
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 
 from app import config
 from app.contracts import (
@@ -58,6 +58,12 @@ def load_scenario(scenario_id: str) -> Scenario:
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"Scenariul {scenario_id} nu există în {config.SCENARIOS_DIR}")
     return Scenario.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    """Serverul e doar API: rădăcina trimite la documentația Swagger."""
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/api/health")
