@@ -3,6 +3,7 @@
 Regula: dacă există excepții BLOCANTE nerezolvate -> EXCEPTION_FLAGGED (nu se blochează nimic automat).
 """
 from datetime import date
+from decimal import Decimal
 
 from app.contracts import (AgentName, AgentStatus, CaseOutcome, CaseStatus, DocType, HoldInstruction,
                            Severity)
@@ -32,8 +33,34 @@ def response_letter(state: dict) -> str:
             "(venituri neurmăribile sau peste cota legală).",
             f"Sumele vor fi virate în contul de consemnare {o.consignment_iban}.",
         ]
+    elif not cust:
+        lines.append(f"Vă comunicăm că debitorul {o.debtor_name} (CNP/CUI {o.debtor_id}) nu figurează în evidențele "
+                     "Raiffeisen Bank S.A. cu conturi deschise; nu s-a indisponibilizat nicio sumă.")
     lines += ["", "Cu stimă,", "Departamentul Popriri și Executări Silite"]
     return "\n".join(lines)
+
+
+def hold_instructions(accounts: list, amount: Decimal, order) -> list[HoldInstruction]:
+    """Împarte suma de blocat pe conturi: întâi contul CURENT, apoi celelalte după sold.
+
+    Fiecare cont primește cel mult soldul lui; restul (dacă soldurile nu ajung) rămâne pe primul cont,
+    ca suma din ordine să fie mereu egală cu `amount_to_hold`.
+    """
+    ordered = sorted(accounts, key=lambda a: (a.account_type.value != "CURENT", -a.current_balance))
+    holds, left = [], amount
+    for acc in ordered:
+        take = min(max(acc.current_balance, Decimal(0)), left)
+        if take > 0:
+            holds.append(HoldInstruction(iban=acc.iban, amount=take, reference=order.case_number or "",
+                                         beneficiary_iban=order.consignment_iban))
+            left -= take
+    if left > 0 and ordered:
+        if holds:
+            holds[0] = holds[0].model_copy(update={"amount": holds[0].amount + left})
+        else:
+            holds.append(HoldInstruction(iban=ordered[0].iban, amount=left, reference=order.case_number or "",
+                                         beneficiary_iban=order.consignment_iban))
+    return holds
 
 
 def run(state: dict, ctx: AgentContext) -> dict:
@@ -52,14 +79,18 @@ def run(state: dict, ctx: AgentContext) -> dict:
         letter = None
     elif order.doc_type == DocType.POPRIRE_SISTARE:
         status, summary, letter = CaseStatus.LIFTED, "Poprirea a fost sistată, indisponibilizarea se ridică.", response_letter(state)
+    elif decision is None:
+        # ofițerul a lămurit excepția de identitate/duplicat, dar nu există calcul (ex. debitorul nu e client)
+        status = CaseStatus.AUTO_PROCESSED
+        summary = ("Excepțiile au fost lămurite de ofițer; nu există conturi de poprit, "
+                   "nu s-a indisponibilizat nicio sumă.")
+        letter = response_letter(state)
     else:
         status = CaseStatus.AUTO_PROCESSED
-        main = next((a for a in state.get("accounts", []) if a.account_type.value == "CURENT"), None)
-        if decision and main and decision.amount_to_hold > 0:
-            hold = HoldInstruction(iban=main.iban, amount=decision.amount_to_hold,
-                                   reference=order.case_number or "", beneficiary_iban=order.consignment_iban)
-            ctx.bank.place_hold(hold)
-            decision.hold_instructions = [hold]
+        if decision.amount_to_hold > 0:
+            decision.hold_instructions = hold_instructions(state.get("accounts", []), decision.amount_to_hold, order)
+            for hold in decision.hold_instructions:
+                ctx.bank.place_hold(hold)
         summary = (f"Poprire procesată automat: se indisponibilizează {decision.amount_to_hold} RON din "
                    f"{order.total_due} RON datorați; {decision.amount_protected} RON rămân clientului.")
         letter = response_letter(state)

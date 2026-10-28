@@ -78,6 +78,25 @@ def _make(t: Transaction, cat: IncomeCategory, method: ClassificationMethod, con
                                  in_analysis_window=in_window)
 
 
+# terminații de articulare / plural după tulpina cuvântului cheie: „Alocatia”, „Salariul”, „Pensiile”
+_SUFFIXES = {"", "E", "A", "EA", "EI", "U", "UL", "ULUI", "I", "II", "IA", "IE", "ILE", "ILOR", "ELE", "ELOR"}
+
+
+def _word_matches(word: str, key: str) -> bool:
+    if word == key:
+        return True
+    if len(key) < 5:                                  # acronime scurte (ICC) doar exact
+        return False
+    stem = key[:-1] if key[-1] in "AEIU" else key
+    return word.startswith(stem) and word[len(stem):] in _SUFFIXES
+
+
+def _keyword_hit(desc: str, keys: list[str]) -> str | None:
+    words = desc.split()
+    return next((k for k in keys if (" " in k and k in desc)
+                 or (" " not in k and any(_word_matches(w, k) for w in words))), None)
+
+
 def classify_one(t: Transaction, history: list[Transaction], registry: list[PayerRegistryEntry],
                  overrides: dict[str, IncomeCategory]) -> ClassifiedTransaction:
     if t.tx_id in overrides:
@@ -86,7 +105,7 @@ def classify_one(t: Transaction, history: list[Transaction], registry: list[Paye
 
     desc = normalize_text(t.description)
     for cat, keys, conf in KEYWORDS:
-        hit = next((k for k in keys if k in desc.split() or (" " in k and k in desc)), None)
+        hit = _keyword_hit(desc, keys)
         if hit:
             return _make(t, cat, ClassificationMethod.KEYWORD, conf,
                          f"Descrierea tranzacției conține termenul „{hit.lower()}” (Art. 729 CPC).")

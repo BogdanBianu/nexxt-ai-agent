@@ -11,7 +11,7 @@ from app import config
 from app.contracts import (AgentName, AgentStatus, CreditorType, DocType, ExceptionCode, ExceptionFlag,
                            GarnishmentOrder, IssuerType, Severity, money)
 from app.core import llm
-from app.core.validators import normalize_text, validate_iban, validate_national_id
+from app.core.validators import normalize_text, validate_iban, validate_issue_date, validate_national_id
 from .context import AgentContext
 
 CRITICAL_FIELDS = ["case_number", "debtor_name", "debtor_id", "total_due"]
@@ -52,7 +52,13 @@ def _ro_amount(value: str | None) -> Decimal:
     cleaned = value.strip().replace(" ", "")
     if "," in cleaned:
         cleaned = cleaned.replace(".", "").replace(",", ".")
+    elif re.fullmatch(r"\d{1,3}(?:\.\d{3})+", cleaned):       # „15.000” = cincisprezece mii
+        cleaned = cleaned.replace(".", "")
     return money(cleaned)
+
+
+# „15.000,00”, „15 000,00”, „15000” sau „15.000” (fără zecimale)
+_AMOUNT = r"(\d[\d\. ]*(?:,\d{1,2})?)"
 
 
 def _find(pattern: str, text: str, flags=re.I) -> str | None:
@@ -80,13 +86,13 @@ def parse_with_regex(text: str, doc_type: DocType) -> GarnishmentOrder:
     else:
         creditor_type = default_creditor
 
-    debtor = re.search(r"Debitor:\s*([^,\n]+),\s*(?:CNP|C\.N\.P\.|CUI|CIF)[:\s]*([0-9]+)", text, re.I)
+    debtor = re.search(r"Debitor:\s*([^,\n]+),\s*(?:CNP|C\.N\.P\.|CUI|CIF)[:\s]*(?:RO)?\s*([0-9]+)", text, re.I)
     date_s = _find(r"Data:\s*(\d{2}\.\d{2}\.\d{4})", text)
     iban = _find(r"IBAN[:\s]*(RO[0-9A-Z ]{22,30})", text)
     iban = re.sub(r"\s", "", iban)[:24] if iban else None
-    principal = _ro_amount(_find(r"Debit principal:\s*([\d\.\s]+,\d{2})", text))
-    costs = _ro_amount(_find(r"Cheltuieli de executare:\s*([\d\.\s]+,\d{2})", text))
-    total = _ro_amount(_find(r"(?:Total de recuperat|Suma total[ăa]|Total debit):\s*([\d\.\s]+,\d{2})", text))
+    principal = _ro_amount(_find(r"Debit principal:\s*" + _AMOUNT, text))
+    costs = _ro_amount(_find(r"Cheltuieli de executare:\s*" + _AMOUNT, text))
+    total = _ro_amount(_find(r"(?:Total de recuperat|Suma total[ăa]|Total debit):\s*" + _AMOUNT, text))
     case_no = _find(r"[Dd]osar(?:ul)? (?:de executare|execu[țt]ional) (?:nr\.?)\s*([0-9]+/[0-9]{4}(?:/[A-Z0-9]+)?)", text)
     ref = _find(r"(?:înființată|infiintata|instituită|instituita|privind)[^\n]*?dosar(?:ul)? (?:de executare )?nr\.?\s*([0-9]+/[0-9]{4})", text)
 
@@ -160,9 +166,10 @@ def run(state: dict, ctx: AgentContext) -> dict:
     exceptions: list[ExceptionFlag] = []
 
     # Validări deterministe (fără LLM)
-    missing = [f for f in CRITICAL_FIELDS
-               if getattr(order, f) in (None, "", Decimal(0)) and not (f == "total_due" and doc_type == DocType.POPRIRE_SISTARE)]
-    low = [f for f in CRITICAL_FIELDS
+    # la sistare suma nu e obligatorie: nu o cerem nici ca lipsă, nici ca citită sigur
+    required = [f for f in CRITICAL_FIELDS if not (f == "total_due" and doc_type == DocType.POPRIRE_SISTARE)]
+    missing = [f for f in required if getattr(order, f) in (None, "", Decimal(0))]
+    low = [f for f in required
            if f not in missing and order.field_confidence.get(f, 1.0) < config.MIN_FIELD_CONFIDENCE]
     if missing or low:
         exceptions.append(ExceptionFlag(
@@ -173,6 +180,12 @@ def run(state: dict, ctx: AgentContext) -> dict:
         exceptions.append(ExceptionFlag(
             code=ExceptionCode.E05_DOCUMENT_INVALID, severity=Severity.BLOCKING, agent=AgentName.EXTRACTION,
             message="Adresa nu pare semnată și ștampilată de emitent.", evidence=["has_signature_and_stamp"]))
+
+    if order.issue_date and not validate_issue_date(order.issue_date, doc.received_at.date()):
+        exceptions.append(ExceptionFlag(
+            code=ExceptionCode.E05_DOCUMENT_INVALID, severity=Severity.BLOCKING, agent=AgentName.EXTRACTION,
+            message=f"Data emiterii ({order.issue_date:%d.%m.%Y}) este după data primirii adresei "
+                    f"({doc.received_at:%d.%m.%Y}).", evidence=["issue_date"]))
 
     cnp_valid = validate_national_id(order.debtor_id) if order.debtor_id else False
     emit(AgentName.EXTRACTION, AgentStatus.PROGRESS,
