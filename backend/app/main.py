@@ -19,10 +19,11 @@ from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 
 from app import config
 from app.contracts import (
-    ActiveGarnishment, AgentName, AgentStatus, AuditEntry, BankSnapshot, DocType, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
+    ActiveGarnishment, AgentName, AiTelemetry, AgentStatus, AuditEntry, BankSnapshot, DocType, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
     CustomerStatus,
-    IncomingDocument, ModuleInfo, PlatformMetrics, ReviewAction, RuleBookInfo, Scenario, ScenarioInfo,
+    IncomingDocument, LlmUsage, ModuleInfo, PlatformMetrics, ReviewAction, RuleBookInfo, Scenario, ScenarioInfo,
 )
+from app.core import telemetry
 from app.core.events import EventSink, now
 from app.core.modules import module_for, registry
 from app.core.pdf_text import bytes_to_text
@@ -161,6 +162,45 @@ def get_metrics():
         total_exempt=float(sum((d.exempt_total for d in decisions), zero)),
         exceptions_by_code=dict(Counter(e.code.value for c in cases for e in c.exceptions)),
         reviews_count=sum(len(c.reviews) for c in cases),
+        ai=_ai_telemetry(cases),
+    )
+
+
+def _ai_telemetry(cases: list[Case]) -> AiTelemetry:
+    """Cost AI (Bedrock) vs. cost manual. Conservator: economia de timp se numără doar pentru dosarele
+    închise complet fără om; cele trimise la ofițer nu primesc niciun minut economisit."""
+    usages = [c.llm_usage for c in cases]
+    calls = sum(u.calls for u in usages)
+    hits = sum(u.cache_hits for u in usages)
+    cost_usd = sum(u.cost_usd for u in usages)
+    cost_eur = cost_usd * config.USD_EUR_RATE
+    manual_per_case = config.OFFICER_MINUTES_PER_CASE / 60 * config.OFFICER_HOURLY_COST_EUR
+    automated = sum(1 for c in cases if c.status in FINAL_AUTO_STATUSES)
+    avoided = automated * manual_per_case
+    billed_latency = sum(u.latency_ms for u in usages if u.calls)
+    return AiTelemetry(
+        llm_calls=calls,
+        cache_hits=hits,
+        cache_hit_rate=round(100 * hits / (calls + hits), 1) if calls + hits else 0.0,
+        failed_calls=sum(u.failed_calls for u in usages),
+        input_tokens=sum(u.input_tokens for u in usages),
+        output_tokens=sum(u.output_tokens for u in usages),
+        total_llm_latency_ms=sum(u.latency_ms for u in usages),
+        avg_llm_latency_ms=round(billed_latency / calls, 1) if calls else 0.0,
+        total_cost_usd=round(cost_usd, 6),
+        total_cost_eur=round(cost_eur, 6),
+        avg_cost_per_case_usd=round(cost_usd / len(cases), 6) if cases else 0.0,
+        avg_cost_per_case_eur=round(cost_eur / len(cases), 6) if cases else 0.0,
+        cache_savings_usd=round(sum(u.cache_savings_usd for u in usages), 6),
+        manual_minutes_per_case=config.OFFICER_MINUTES_PER_CASE,
+        officer_hourly_cost_eur=config.OFFICER_HOURLY_COST_EUR,
+        manual_cost_per_case_eur=round(manual_per_case, 2),
+        automated_cases=automated,
+        officer_hours_saved=round(automated * config.OFFICER_MINUTES_PER_CASE / 60, 2),
+        manual_cost_avoided_eur=round(avoided, 2),
+        net_savings_eur=round(avoided - cost_eur, 2),
+        roi_multiple=round(avoided / cost_eur, 1) if cost_eur > 0 else None,
+        pricing={k: list(v) for k, v in telemetry.PRICING_USD_PER_1K.items()},
     )
 
 
@@ -253,8 +293,10 @@ async def upload_case_document(file: UploadFile = File(...), scenario_id: str = 
     if not is_pdf and not filename.lower().endswith(".txt"):
         raise HTTPException(status_code=415, detail="Se acceptă doar fișiere PDF sau .txt")
 
+    usage = LlmUsage()
     try:
-        text = bytes_to_text(data, "upload.pdf" if is_pdf else filename)
+        with telemetry.track(usage):          # OCR-ul pe Bedrock Vision intră tot în costul dosarului
+            text = bytes_to_text(data, "upload.pdf" if is_pdf else filename)
     except Exception as exc:  # PDF corupt / criptat
         raise HTTPException(status_code=422, detail=f"Nu am putut citi textul din fișier: {exc}") from exc
 
@@ -280,6 +322,7 @@ async def upload_case_document(file: UploadFile = File(...), scenario_id: str = 
             text=text,
             pdf_path=_data_path(stored) if is_pdf else None,
         ),
+        llm_usage=usage,
     )
     BANKS[case_id] = sc.bank
     CASES[case_id] = _run_pipeline(case, sc.bank)
@@ -371,6 +414,13 @@ def _response_pdf_renderer():
 
 
 def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = None) -> Case:
+    with telemetry.track(case.llm_usage) as usage:   # se adună peste rulări: și re-rularea HITL costă
+        case = _run_tracked(case, bank, review)
+    case.llm_usage = usage                         # modulul poate întoarce o copie a dosarului
+    return case
+
+
+def _run_tracked(case: Case, bank: BankSnapshot, review: ReviewAction | None) -> Case:
     sink = EventSink(case.case_id)
     started = time.perf_counter()
     doc_type, _conf, _reason = classify_document(case.document, sink.emit)

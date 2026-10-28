@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from app import config
+from app.core import telemetry
 
 log = logging.getLogger("lexops.llm")
 _bedrock_client = None
@@ -77,6 +78,8 @@ def _read_cache(key_path: Path) -> str | None:
                 "output_tokens": payload.get("output_tokens", 0),
                 "cached": True,
             })
+            telemetry.record_call(payload.get("model", config.LLM_MODEL), payload.get("input_tokens", 0),
+                                  payload.get("output_tokens", 0), 1, cached=True)
             return payload.get("text")
     except Exception:
         return None
@@ -126,6 +129,7 @@ def _call_bedrock(system: str, user: str, temperature: float, max_tokens: int) -
         client = _get_bedrock_client()
     except Exception as exc:
         log.warning("AWS Bedrock client unavailable (%s), using deterministic fallback", exc)
+        telemetry.record_failure()
         return None
     candidates = [config.LLM_MODEL] + [m for m in _FALLBACK_BEDROCK_MODELS if m != config.LLM_MODEL]
     last_exc: Exception | None = None
@@ -155,6 +159,7 @@ def _call_bedrock(system: str, user: str, temperature: float, max_tokens: int) -
                         "cached": False,
                     })
                     _write_cache(key_path, text, model_id, in_tok, out_tok)
+                    telemetry.record_call(model_id, in_tok, out_tok, elapsed_ms, cached=False)
                     return text
                 break
             except Exception as exc:
@@ -165,11 +170,13 @@ def _call_bedrock(system: str, user: str, temperature: float, max_tokens: int) -
                     continue
                 if "ExpiredToken" in err_msg or "UnrecognizedClientException" in err_msg:
                     log.warning("AWS Bedrock credentials expired or invalid: %s", exc)
+                    telemetry.record_failure()
                     return None
                 break
 
     if last_exc:
         log.warning("AWS Bedrock call failed: %s", last_exc)
+    telemetry.record_failure()
     return None
 
 
@@ -243,8 +250,10 @@ def ocr_image_bytes(image_bytes: bytes, fmt: str = "png") -> str | None:
                     "cached": False,
                 })
                 _write_cache(key_path, text, model_id, in_tok, out_tok)
+                telemetry.record_call(model_id, in_tok, out_tok, elapsed_ms, cached=False)
                 return text
         except Exception as exc:
             log.warning("Bedrock Vision OCR failed on %s: %s", model_id, exc)
             continue
+    telemetry.record_failure()
     return None

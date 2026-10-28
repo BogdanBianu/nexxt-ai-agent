@@ -37,6 +37,20 @@ class ReviewAction(Contract):
     timestamp: datetime | None = None
 
 
+class LlmUsage(Contract):
+    """Telemetria AI a unui dosar, adunată peste toate rulările (inclusiv re-rulările HITL)."""
+    calls: int = 0                              # apeluri Bedrock facturate
+    cache_hits: int = 0                         # răspunsuri servite din cache-ul pe disc (cost 0)
+    failed_calls: int = 0                       # eșecuri -> fallback determinist
+    input_tokens: int = 0
+    output_tokens: int = 0
+    latency_ms: int = 0                         # timpul total petrecut în LLM
+    cost_usd: float = 0.0
+    cost_eur: float = 0.0
+    cache_savings_usd: float = 0.0              # cât ar fi costat apelurile servite din cache
+    models: list[str] = Field(default_factory=list)
+
+
 class AuditEntry(Contract):
     timestamp: datetime
     actor: str                                  # numele agentului sau "user:<nume>"
@@ -65,3 +79,4 @@ class Case(Contract):
 
     reviews: list[ReviewAction] = Field(default_factory=list)
     audit: list[AuditEntry] = Field(default_factory=list)
+    llm_usage: LlmUsage = Field(default_factory=LlmUsage)

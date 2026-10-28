@@ -235,6 +235,21 @@ export interface Case {
   outcome?: CaseOutcome | null;
   reviews: ReviewAction[];
   audit: AuditEntry[];
+  llm_usage: LlmUsage;
+}
+
+// Telemetria AI a unui dosar, adunată peste toate rulările (inclusiv re-rulările HITL)
+export interface LlmUsage {
+  calls: number; // apeluri Bedrock facturate
+  cache_hits: number; // răspunsuri din cache-ul pe disc (cost 0)
+  failed_calls: number; // eșecuri -> fallback determinist
+  input_tokens: number;
+  output_tokens: number;
+  latency_ms: number;
+  cost_usd: number;
+  cost_eur: number;
+  cache_savings_usd: number;
+  models: string[];
 }
 
 // GET /api/cases/{id}/audit — oglinda AuditEntry din backend/app/contracts
@@ -301,4 +316,31 @@ export interface PlatformMetrics {
   total_exempt: number;
   exceptions_by_code: Record<string, number>;
   reviews_count: number;
+  ai: AiTelemetry;
+}
+
+// Blocul `ai` din GET /api/metrics: cost AI vs. cost manual (dashboard-ul Executive Impact)
+export interface AiTelemetry {
+  llm_calls: number;
+  cache_hits: number;
+  cache_hit_rate: number; // %
+  failed_calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_llm_latency_ms: number;
+  avg_llm_latency_ms: number;
+  total_cost_usd: number;
+  total_cost_eur: number;
+  avg_cost_per_case_usd: number;
+  avg_cost_per_case_eur: number;
+  cache_savings_usd: number;
+  manual_minutes_per_case: number;
+  officer_hourly_cost_eur: number;
+  manual_cost_per_case_eur: number;
+  automated_cases: number; // închise fără om (AUTO_PROCESSED + LIFTED)
+  officer_hours_saved: number;
+  manual_cost_avoided_eur: number;
+  net_savings_eur: number;
+  roi_multiple: number | null; // null cât timp AI-ul a costat 0
+  pricing: Record<string, number[]>; // USD / 1K tokeni [input, output]
 }

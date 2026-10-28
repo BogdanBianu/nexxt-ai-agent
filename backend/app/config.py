@@ -37,6 +37,11 @@ AMBIGUOUS_AMOUNT_THRESHOLD = float(os.getenv("AMBIGUOUS_AMOUNT_THRESHOLD", "500"
 # Fereastra de analiză a încasărilor (zile înainte de primirea adresei)
 ANALYSIS_WINDOW_DAYS = int(os.getenv("ANALYSIS_WINDOW_DAYS", "30"))
 
+# Telemetrie AI & ROI (presupuneri pentru dashboard-ul Executive Impact, ajustabile din .env)
+USD_EUR_RATE = float(os.getenv("USD_EUR_RATE", "0.92"))
+OFFICER_MINUTES_PER_CASE = float(os.getenv("OFFICER_MINUTES_PER_CASE", "15"))   # procesare manuală / dosar
+OFFICER_HOURLY_COST_EUR = float(os.getenv("OFFICER_HOURLY_COST_EUR", "15"))     # cost complet ofițer / oră
+
 RULES_FILE = os.getenv("RULES_FILE", str(ROOT_DIR / "backend/app/modules/popriri/rules/v2026_10.yaml"))
 
 
