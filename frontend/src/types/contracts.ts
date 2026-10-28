@@ -254,3 +254,34 @@ export interface ScenarioInfo {
   title: string;
   description: string;
 }
+
+export interface RuleInfo {
+  id: string;
+  legal_source: string;
+  description: string;
+  categories: IncomeCategory[];
+  creditor_types: CreditorType[];
+  quota?: number | null;
+  quota_if_creditor: Partial<Record<CreditorType, number>>;
+}
+
+// GET /api/rules
+export interface RuleBookInfo {
+  version: string;
+  parameters: Record<string, unknown>;
+  periodic_categories: IncomeCategory[];
+  rules: RuleInfo[];
+}
+
+// GET /api/metrics
+export interface PlatformMetrics {
+  total_cases: number;
+  cases_by_status: Record<string, number>;
+  automation_rate: number;
+  avg_processing_ms: number;
+  total_amount_held: number;
+  total_amount_protected: number;
+  total_exempt: number;
+  exceptions_by_code: Record<string, number>;
+  reviews_count: number;
+}

@@ -3,23 +3,32 @@
 Acest fișier expune toate endpoint-urile HTTP și SSE (Server-Sent Events) pe care
 le consumă Frontend-ul (Om4 și Om5).
 """
-from datetime import datetime
-from pathlib import Path
+from collections import Counter
+from decimal import Decimal
+from functools import lru_cache
+import importlib.util
 import json
+import logging
+import re
+import time
 import uuid
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from app import config
 from app.contracts import (
-    BankSnapshot, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
-    DocType, IncomingDocument, ModuleInfo, ReviewAction, Scenario, ScenarioInfo,
+    AuditEntry, BankSnapshot, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
+    IncomingDocument, ModuleInfo, PlatformMetrics, ReviewAction, RuleBookInfo, Scenario, ScenarioInfo,
 )
 from app.core.events import EventSink, now
 from app.core.modules import module_for, registry
+from app.core.pdf_text import bytes_to_text
 from app.core.router import classify_document
+from app.modules.popriri.engine.rules import load_rulebook
+
+log = logging.getLogger("lexops")
 
 app = FastAPI(title="LexOps Platform API", version="0.1.0")
 
@@ -35,6 +44,12 @@ app.add_middleware(
 CASES: dict[str, Case] = {}
 BANKS: dict[str, BankSnapshot] = {}
 EVENTS: dict[str, list[dict]] = {}
+PROCESSING_MS: dict[str, float] = {}           # durata primei rulări a pipeline-ului (pentru /api/metrics)
+AUDIT_LOG: dict[str, list[AuditEntry]] = {}    # istoricul TUTUROR rulărilor (o re-rulare HITL nu șterge nimic)
+
+UPLOADS_DIR = config.DATA_DIR / "uploads"
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+FINAL_AUTO_STATUSES = {CaseStatus.AUTO_PROCESSED, CaseStatus.LIFTED}
 
 
 def load_scenario(scenario_id: str) -> Scenario:
@@ -48,6 +63,34 @@ def load_scenario(scenario_id: str) -> Scenario:
 @app.get("/api/health")
 def health():
     return {"status": "ok", "llm_enabled": config.llm_enabled(), "model": config.LLM_MODEL}
+
+
+@app.get("/api/rules", response_model=RuleBookInfo)
+def get_rules():
+    """Registrul de reguli versionat (v2026_10.yaml), cu sursa legală a fiecărei reguli."""
+    return RuleBookInfo.model_validate(load_rulebook().as_dict())
+
+
+@app.get("/api/metrics", response_model=PlatformMetrics)
+def get_metrics():
+    """KPI-uri agregate peste dosarele procesate: automatizare, timp mediu, sume protejate."""
+    cases = list(CASES.values())
+    popriri = [c for c in cases if c.status != CaseStatus.ROUTED_TO_OTHER_MODULE]
+    decisions = [c.decision for c in cases if c.decision]
+    automated = sum(1 for c in popriri if c.status in FINAL_AUTO_STATUSES)
+    durations = [PROCESSING_MS[c.case_id] for c in cases if c.case_id in PROCESSING_MS]
+    zero = Decimal(0)
+    return PlatformMetrics(
+        total_cases=len(cases),
+        cases_by_status=dict(Counter(c.status.value for c in cases)),
+        automation_rate=round(100 * automated / len(popriri), 1) if popriri else 0.0,
+        avg_processing_ms=round(sum(durations) / len(durations), 1) if durations else 0.0,
+        total_amount_held=float(sum((d.amount_to_hold for d in decisions), zero)),
+        total_amount_protected=float(sum((d.amount_protected for d in decisions), zero)),
+        total_exempt=float(sum((d.exempt_total for d in decisions), zero)),
+        exceptions_by_code=dict(Counter(e.code.value for c in cases for e in c.exceptions)),
+        reviews_count=sum(len(c.reviews) for c in cases),
+    )
 
 
 @app.get("/api/modules", response_model=list[ModuleInfo])
@@ -112,9 +155,52 @@ def create_case_from_scenario(body: CreateCaseFromScenario):
 
 
 @app.post("/api/cases/upload", response_model=Case)
-async def upload_case_document(file: UploadFile = File(...), scenario_id: str = "S1"):
-    """TODO(Om2): Preia un PDF încărcat manual în UI, extrage textul și îl rulează pe BankSnapshot-ul lui scenario_id."""
-    raise HTTPException(status_code=501, detail="TODO Om2: implementează upload PDF cu app.core.pdf_text.bytes_to_text")
+async def upload_case_document(file: UploadFile = File(...), scenario_id: str = Form("S1")):
+    """Încarcă un PDF (sau .txt) în timpul demo-ului și îl rulează pe BankSnapshot-ul scenariului `scenario_id`.
+
+    Se trimite ca `multipart/form-data` cu câmpurile `file` și (opțional) `scenario_id`.
+    """
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Fișierul încărcat este gol")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Fișierul depășește 10 MB")
+
+    filename = file.filename or "document"
+    is_pdf = data[:5] == b"%PDF-"
+    if not is_pdf and not filename.lower().endswith(".txt"):
+        raise HTTPException(status_code=415, detail="Se acceptă doar fișiere PDF sau .txt")
+    sc = load_scenario(scenario_id)
+
+    try:
+        text = bytes_to_text(data, "upload.pdf" if is_pdf else filename)
+    except Exception as exc:  # PDF corupt / criptat
+        raise HTTPException(status_code=422, detail=f"Nu am putut citi textul din fișier: {exc}") from exc
+
+    case_id = f"CASE-UP-{uuid.uuid4().hex[:6].upper()}"
+    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    stored = UPLOADS_DIR / f"{case_id}_{re.sub(r'[^A-Za-z0-9._-]', '_', filename)}"
+    stored.write_bytes(data)
+
+    ts = now()
+    case = Case(
+        case_id=case_id,
+        scenario_id=sc.scenario_id,
+        status=CaseStatus.PROCESSING,
+        created_at=ts,
+        updated_at=ts,
+        document=IncomingDocument(
+            document_id=f"DOC-{case_id}",
+            filename=filename,
+            received_at=ts,
+            content_type="application/pdf" if is_pdf else "text/plain",
+            text=text,
+            pdf_path=stored.relative_to(config.DATA_DIR).as_posix() if is_pdf else None,
+        ),
+    )
+    BANKS[case_id] = sc.bank
+    CASES[case_id] = _run_pipeline(case, sc.bank)
+    return CASES[case_id]
 
 
 @app.get("/api/cases/{case_id}", response_model=Case)
@@ -122,6 +208,34 @@ def get_case(case_id: str):
     if case_id not in CASES:
         raise HTTPException(status_code=404, detail="Dosarul nu a fost găsit")
     return CASES[case_id]
+
+
+@app.get("/api/cases/{case_id}/audit", response_model=list[AuditEntry])
+def get_case_audit(case_id: str):
+    """Audit trail complet: ce agent / ce om a decis, pe ce regulă și cu ce dovezi."""
+    case = get_case(case_id)
+    entries = AUDIT_LOG.get(case_id, []) + case.audit
+    entries += [AuditEntry(timestamp=r.timestamp or case.updated_at, actor=f"user:{r.reviewer}",
+                           action="HITL_REVIEW", details=r.model_dump(mode="json", exclude={"timestamp"}))
+                for r in case.reviews]
+    return sorted(entries, key=lambda e: e.timestamp)
+
+
+@app.get("/api/cases/{case_id}/response-pdf")
+def get_response_pdf(case_id: str):
+    """Adresa de răspuns a băncii către executor, generată de Om3 (scripts/generate_pdfs.py)."""
+    case = get_case(case_id)
+    letter = case.outcome.response_letter_text if case.outcome else None
+    if not letter:
+        raise HTTPException(status_code=409,
+                            detail="Dosarul nu are adresă de răspuns (excepții nerezolvate sau dosar rutat)")
+    path = _response_pdf_renderer()(case.case_id, letter, config.OUTPUT_DIR)
+    case.outcome.response_letter_pdf = path.relative_to(config.DATA_DIR).as_posix()
+    with open(path, "rb") as fh:
+        is_pdf = fh.read(5) == b"%PDF-"
+    # până când Om3 termină generatorul reportlab, stub-ul scrie text simplu
+    return FileResponse(path, media_type="application/pdf" if is_pdf else "text/plain; charset=utf-8",
+                        filename=path.name if is_pdf else f"{path.stem}.txt")
 
 
 @app.get("/api/cases/{case_id}/events")
@@ -155,8 +269,19 @@ def review_case(case_id: str, action: ReviewAction):
     return CASES[case_id]
 
 
+@lru_cache
+def _response_pdf_renderer():
+    """Încarcă `render_bank_response_pdf` din scripts/generate_pdfs.py (scripts/ nu e pachet Python)."""
+    path = config.ROOT_DIR / "scripts" / "generate_pdfs.py"
+    spec = importlib.util.spec_from_file_location("lexops_generate_pdfs", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.render_bank_response_pdf
+
+
 def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = None) -> Case:
     sink = EventSink(case.case_id)
+    started = time.perf_counter()
     doc_type, _conf, _reason = classify_document(case.document, sink.emit)
     case.doc_type = doc_type
     mod = module_for(doc_type)
@@ -166,8 +291,32 @@ def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = 
         case.status = CaseStatus.ROUTED_TO_OTHER_MODULE
     else:
         case.module_id = mod.info.module_id
-        case = mod.process(case, bank, sink.emit, review=review)
+        try:
+            case = mod.process(case, bank, sink.emit, review=review)
+        except Exception as exc:  # un document neașteptat la demo nu trebuie să dea 500
+            log.exception("Pipeline eșuat pentru %s", case.case_id)
+            case.status = CaseStatus.FAILED
+            case.audit.append(AuditEntry(timestamp=now(), actor="platform", action="PIPELINE_ERROR",
+                                         details={"error": f"{type(exc).__name__}: {exc}"}))
 
+    if review is None:
+        PROCESSING_MS[case.case_id] = (time.perf_counter() - started) * 1000
     case.updated_at = now()
     EVENTS[case.case_id] = [e.model_dump(mode="json") for e in sink.events]
+    AUDIT_LOG.setdefault(case.case_id, []).extend(_audit_entries(case, sink))
     return case
+
+
+def _audit_entries(case: Case, sink: EventSink) -> list[AuditEntry]:
+    """Ce s-a decis la această rulare: pașii agenților, regulile aplicate, excepțiile ridicate."""
+    entries = [AuditEntry(timestamp=ev.timestamp, actor=ev.agent.value, action=ev.status.value,
+                          details={"message": ev.message, **ev.data})
+               for ev in sink.events]
+    if case.decision:
+        entries += [AuditEntry(timestamp=case.updated_at, actor="RULE_ENGINE", action="RULE_APPLIED",
+                               details=r.model_dump(mode="json"))
+                    for r in case.decision.rules_applied]
+    entries += [AuditEntry(timestamp=case.updated_at, actor=e.agent.value, action="EXCEPTION_RAISED",
+                           details=e.model_dump(mode="json"))
+                for e in case.exceptions]
+    return entries

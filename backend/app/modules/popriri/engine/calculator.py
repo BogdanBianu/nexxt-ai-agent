@@ -12,6 +12,23 @@ from app.contracts import (ActiveGarnishment, AgentName, ClassifiedTransaction, 
 from .rules import RuleBook
 
 ZERO = Decimal("0")
+NEW_ORDER = "__new__"
+
+
+def allocate_by_priority(pool: Decimal, claims: list[dict], book: RuleBook) -> dict[str, Decimal]:
+    """R-PRIO-09: distribuie `pool` între creanțe în ordinea de preferință legală.
+
+    Fiecare creanță: {"key", "creditor_type", "ceiling", "order"}; `order` departajează
+    creanțele de același rang (ordinea înregistrării; noua poprire vine ultima).
+    Întoarce {key: sumă alocată}; nicio creanță nu primește peste `ceiling`.
+    """
+    left = max(pool, ZERO)
+    out: dict[str, Decimal] = {}
+    for c in sorted(claims, key=lambda c: (book.priority_rank(c["creditor_type"]), c["order"])):
+        take = min(max(c["ceiling"], ZERO), left)
+        out[c["key"]] = money(take)
+        left -= take
+    return out
 
 
 def compute_decision(order: GarnishmentOrder, txs: list[ClassifiedTransaction],
@@ -50,6 +67,7 @@ def compute_decision(order: GarnishmentOrder, txs: list[ClassifiedTransaction],
                                        description=rule.description, base_amount=base,
                                        seizable_amount=seizable, tx_ids=[t.tx_id for t in items]))
 
+    seizable_periodic_uncapped = ZERO
     # 2. Venitul periodic (salariu/pensie): cotă + protecția salariului minim + plafon cumulat
     periodic = sum((t.amount for t in periodic_txs), ZERO)
     seizable_periodic = ZERO
@@ -73,6 +91,7 @@ def compute_decision(order: GarnishmentOrder, txs: list[ClassifiedTransaction],
                                                seizable_amount=limited))
                 seizable_periodic = limited
 
+        seizable_periodic_uncapped = seizable_periodic
         # R-CONC-05: plafon cumulat cu popririle deja active
         if active:
             already = sum((g.monthly_periodic_take for g in active), ZERO)
@@ -115,4 +134,40 @@ def compute_decision(order: GarnishmentOrder, txs: list[ClassifiedTransaction],
                                         creditor_type=creditor, amount=money(to_hold))],
         rules_version=book.version,
     )
+    if active and periodic > 0:
+        _apply_priority_allocation(decision, order, active, book, seizable_periodic_uncapped)
     return decision, exceptions
+
+
+def _apply_priority_allocation(decision: GarnishmentDecision, order: GarnishmentOrder,
+                               active: list[ActiveGarnishment], book: RuleBook,
+                               new_periodic_claim: Decimal) -> None:
+    """Popriri concurente (S3): propunerea de reîmpărțire a plafonului cumulat pe venitul periodic.
+
+    Popririle existente își păstrează reținerea lunară actuală ca plafon; noua poprire cere
+    partea ei legală (cota din R-WAGE-03/04). `amount_to_hold` rămâne suma care se poate bloca
+    automat fără a atinge reținerile existente; alocările arată ce ar rezulta după R-PRIO-09.
+    """
+    pool = money(decision.periodic_income * book.cumulative_cap)
+    claims = [{"key": g.garnishment_id, "creditor_type": g.creditor_type, "order": i,
+               "ceiling": min(g.monthly_periodic_take, max(g.total_due - g.amount_recovered, ZERO))}
+              for i, g in enumerate(sorted(active, key=lambda g: g.registered_at))]
+    claims.append({"key": NEW_ORDER, "creditor_type": order.creditor_type, "order": len(claims),
+                   "ceiling": min(new_periodic_claim, order.total_due)})
+    shares = allocate_by_priority(pool, claims, book)
+
+    new_amount = money(min(shares[NEW_ORDER] + decision.seizable_other, order.total_due))
+    allocations = [CreditorAllocation(case_number=order.case_number or "?",
+                                      creditor_name=order.creditor_name or "?",
+                                      creditor_type=order.creditor_type, amount=new_amount)]
+    allocations += [CreditorAllocation(case_number=g.case_number, creditor_name=g.creditor_name,
+                                       creditor_type=g.creditor_type, amount=shares[g.garnishment_id])
+                    for g in active]
+    allocations.sort(key=lambda a: book.priority_rank(a.creditor_type))
+    decision.allocations = allocations
+
+    r = book.rule("R-PRIO-09")
+    decision.rules_applied.append(RuleApplication(
+        rule_id=r.id, legal_source=r.legal_source,
+        description=r.description + " Ordine: " + " > ".join(a.creditor_type.value for a in allocations),
+        base_amount=pool, seizable_amount=shares[NEW_ORDER]))

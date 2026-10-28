@@ -7,7 +7,7 @@
     "filename": "adresa_infiintare_poprire_BEJ_4455_2026.pdf",
     "received_at": "2026-10-28T10:00:00Z",
     "content_type": "text/plain",
-    "text": "BIROUL EXECUTORULUI JUDECĂTORESC MARINESCU VLAD\nDosarul de executare nr. 4455/2026\nData: 10.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn dosarul de executare nr. 4455/2026 dispun ÎNFIINȚAREA POPRIRII asupra conturilor:\nDebitor: DUMITRU ALEXANDRU, CNP: 1850615400016\nCreditor: BANCA COMERCIALĂ CREDIT S.A.\nNatura creanței: Comercială\nDebit principal: 8.500,00 RON\nCheltuieli de executare: 500,00 RON\nTotal de recuperat: 9.000,00 RON\n\nCont consemnare IBAN: RO49AAAA1B31007593840000.\nSemnătură și ștampilă L.S.",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC MARINESCU VLAD\nDosarul de executare nr. 4455/2026\nData: 10.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn dosarul de executare nr. 4455/2026 dispun ÎNFIINȚAREA POPRIRII asupra conturilor:\nDebitor: DUMITRU ALEXANDRU, CNP: 1850615400011\nCreditor: BANCA COMERCIALĂ CREDIT S.A.\nNatura creanței: Comercială\nDebit principal: 8.500,00 RON\nCheltuieli de executare: 500,00 RON\nTotal de recuperat: 9.000,00 RON\n\nCont consemnare IBAN: RO49AAAA1B31007593840000.\nSemnătură și ștampilă L.S.",
     "pdf_path": null
   },
   "bank": {
@@ -15,7 +15,7 @@
       {
         "customer_id": "CUST-004",
         "full_name": "DUMITRU ALEXANDRU",
-        "national_id": "1850615400016",
+        "national_id": "1850615400011",
         "is_legal_entity": false,
         "status": "ACTIV",
         "address": "Str. Unirii nr. 22, Cluj-Napoca"
