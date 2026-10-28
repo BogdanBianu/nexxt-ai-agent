@@ -88,14 +88,21 @@ export function Home({ onOpen }: Props) {
 
   return (
     <div className="pt-10">
-      <p className="text-sm text-muted first-letter:uppercase">{today}</p>
-      <h1 className="display mt-1 text-4xl">Registratura juridică</h1>
-      <p className="mt-2 max-w-[68ch] text-[15px] text-muted">
-        Încarcă documentele primite de bancă. Agentul de primire trimite fiecare document modulului potrivit; tu intervii doar unde agenții s-au
-        oprit.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+        <h1 className="display text-[clamp(2rem,4.2vw,3.5rem)] leading-[1.04]">
+          <span className="block">Lasă-ne documentele.</span>
+          <span className="block">Agenții noștri se ocupă de ele.</span>
+        </h1>
+        <div className="max-w-[44ch] pb-1.5 text-[15px] text-muted">
+          <p className="font-semibold text-ink first-letter:uppercase">{today}</p>
+          <p className="mt-1">
+            Popriri, sechestre, cereri de la autorități sau insolvențe: fiecare ajunge singur la modulul potrivit. Tu decizi doar unde agenții se
+            opresc.
+          </p>
+        </div>
+      </div>
 
-      <div className="mt-8">
+      <div className="mt-10">
         <BatchUpload onOpen={onOpen} onFinished={load} />
       </div>
 

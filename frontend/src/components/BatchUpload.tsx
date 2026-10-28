@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { ArrowRight, Check, FileText, LoaderCircle, Minus, OctagonAlert, RotateCcw, Upload } from "lucide-react";
 import { api, uploadDocument } from "../api/client";
 import type { AgentEvent, AgentName, Case } from "../types/contracts";
+import { say } from "../lib/mascot";
 import { caseTitle, EXCEPTION_LABEL, humanize, PIPELINE, STATUS_STYLE } from "../lib/ui";
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -117,6 +118,8 @@ export function BatchUpload({ onOpen, onFinished }: Props) {
       return { id: `${Date.now()}-${i}-${file.name}`, file, state: reason ? "error" : "queued", reason: reason ?? undefined };
     });
     if (!next.length) return;
+    const ok = next.filter((x) => x.state === "queued").length;
+    if (ok) say(ok === 1 ? "Am primit documentul. Mă uit pe el acum." : `Am primit ${ok} documente. Le iau pe rând, una câte una.`);
     // Adăugate în timpul procesării: intră în lotul curent; după rezumat: încep un lot nou
     setItems((list) => (list.some((x) => x.state === "queued" || x.state === "running") ? [...list, ...next] : next));
   }, []);
@@ -177,7 +180,16 @@ export function BatchUpload({ onOpen, onFinished }: Props) {
   const finished = items.length > 0 && !activeId && !items.some((x) => x.state === "queued" || x.state === "running");
   const wasFinished = useRef(false);
   useEffect(() => {
-    if (finished && !wasFinished.current) onFinished();
+    if (finished && !wasFinished.current) {
+      onFinished();
+      const bad = items.filter((x) => x.state === "error").length;
+      const good = items.filter((x) => x.state === "done").length;
+      say(
+        bad === 0
+          ? `Gata! ${good === 1 ? "Documentul e rezolvat" : `Toate cele ${good} sunt rezolvate`} automat. Poți bea cafeaua liniștit.`
+          : `Gata! ${good} ${good === 1 ? "rezolvat" : "rezolvate"} automat, ${bad} ${bad === 1 ? "are" : "au"} nevoie de tine.`,
+      );
+    }
     wasFinished.current = finished;
   }, [finished, onFinished]);
 

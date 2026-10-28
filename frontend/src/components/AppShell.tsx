@@ -6,6 +6,7 @@ import type { CaseSummary, ModuleInfo } from "../types/contracts";
 import { moduleOf } from "../lib/modules";
 import { STATUS_STYLE } from "../lib/ui";
 import logo from "../assets/logo_raiffeisen.png";
+import { Mascot } from "./Mascot";
 
 interface Props {
   // Modulul afișat acum; null pe pagina de start
@@ -187,6 +188,7 @@ export function AppShell({ current, onHome, onModule, children }: Props) {
       </header>
 
       <main className="mx-auto max-w-[1440px] px-6 pb-16 lg:px-10">{children}</main>
+      <Mascot />
     </div>
   );
 }
