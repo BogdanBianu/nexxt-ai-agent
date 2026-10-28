@@ -32,8 +32,10 @@ def allocate_by_priority(pool: Decimal, claims: list[dict], book: RuleBook) -> d
 
 
 def compute_decision(order: GarnishmentOrder, txs: list[ClassifiedTransaction],
-                     active: list[ActiveGarnishment], book: RuleBook
+                     active: list[ActiveGarnishment], book: RuleBook,
+                     available_balance: Decimal | None = None,
                      ) -> tuple[GarnishmentDecision, list[ExceptionFlag]]:
+    """`available_balance` = soldul curent al conturilor (RON); None = nu se plafonează (R-BAL-11)."""
     creditor = order.creditor_type
     window = [t for t in txs if t.in_analysis_window]
     applied: list[RuleApplication] = []
@@ -121,6 +123,14 @@ def compute_decision(order: GarnishmentOrder, txs: list[ClassifiedTransaction],
         r = book.rule("R-CAP-08")
         applied.append(RuleApplication(rule_id=r.id, legal_source=r.legal_source, description=r.description,
                                        base_amount=seizable_total, seizable_amount=to_hold))
+
+    # R-BAL-11: nu se poate bloca mai mult decât există acum în cont
+    if available_balance is not None and to_hold > max(available_balance, ZERO):
+        r = book.rule("R-BAL-11")
+        capped = max(money(available_balance), ZERO)
+        applied.append(RuleApplication(rule_id=r.id, legal_source=r.legal_source, description=r.description,
+                                       base_amount=to_hold, seizable_amount=capped))
+        to_hold = capped
 
     exempt_total += periodic - seizable_periodic
     total_window = sum((t.amount for t in window), ZERO)

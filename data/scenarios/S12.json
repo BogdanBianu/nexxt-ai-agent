@@ -1,0 +1,58 @@
+{
+  "scenario_id": "S12",
+  "title": "Debitor decedat — nu se blochează nimic automat",
+  "description": "Clientul figurează DECEDAT în Core Banking. Conturile intră în masa succesorală: excepția blocantă E08, ofițerul decide (răspuns către executor cu certificatul de deces).",
+  "document": {
+    "document_id": "DOC-S12",
+    "filename": "adresa_S12.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC IONESCU RADU\nDosarul de executare nr. 4040/2026\nData: 19.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 4040/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: TOMA NICOLAE, CNP: 1460504123457\nCreditor: ENEL ENERGIE S.A.\nNatura creanței: Comercială\nDebit principal: 1.200,00 RON\nCheltuieli de executare: 100,00 RON\nTotal de recuperat: 1.300,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO27CECEB000000000123456.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-012",
+        "full_name": "TOMA NICOLAE",
+        "national_id": "1460504123457",
+        "is_legal_entity": false,
+        "status": "DECEDAT",
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO29RZBR0000060066667777",
+        "customer_id": "CUST-012",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0,
+        "current_balance": 3000
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S12-10",
+        "iban": "RO29RZBR0000060066667777",
+        "booking_date": "2026-10-12",
+        "direction": "CREDIT",
+        "amount": 3000,
+        "counterparty_name": "CASA JUDETEANA DE PENSII",
+        "counterparty_iban": null,
+        "description": "Pensie"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "EXCEPTION_FLAGGED",
+    "amount_to_hold": 0.0,
+    "exception_codes": [
+      "E08"
+    ],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

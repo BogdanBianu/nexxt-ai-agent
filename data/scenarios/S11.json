@@ -1,0 +1,56 @@
+{
+  "scenario_id": "S11",
+  "title": "Datorie mică — se blochează doar cât se datorează",
+  "description": "Urmăribil: 2.000 RON din salariu + 2.000 RON sold anterior = 4.000 RON, dar datoria totală e de 750 RON. R-CAP-08: se blochează exact 750 RON.",
+  "document": {
+    "document_id": "DOC-S11",
+    "filename": "adresa_S11.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC POP ANA\nDosarul de executare nr. 880/2026\nData: 22.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 880/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: LUPU ADRIAN, CNP: 1900722123452\nCreditor: DIGI ROMANIA S.A.\nNatura creanței: Comercială\nDebit principal: 600,00 RON\nCheltuieli de executare: 150,00 RON\nTotal de recuperat: 750,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO27CECEB000000000123456.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-011",
+        "full_name": "LUPU ADRIAN",
+        "national_id": "1900722123452",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO24RZBR0000060044445555",
+        "customer_id": "CUST-011",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 2000,
+        "current_balance": 8000
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S11-10",
+        "iban": "RO24RZBR0000060044445555",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 6000,
+        "counterparty_name": "SC AUTO PARTS SRL",
+        "counterparty_iban": null,
+        "description": "Salariu octombrie"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 750.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

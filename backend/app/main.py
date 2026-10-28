@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 
 from app import config
 from app.contracts import (
-    AgentName, AgentStatus, AuditEntry, BankSnapshot, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
+    ActiveGarnishment, AgentName, AgentStatus, AuditEntry, BankSnapshot, DocType, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
     IncomingDocument, ModuleInfo, PlatformMetrics, ReviewAction, RuleBookInfo, Scenario, ScenarioInfo,
 )
 from app.core.events import EventSink, now
@@ -46,7 +46,11 @@ BANKS: dict[str, BankSnapshot] = {}
 EVENTS: dict[str, list[dict]] = {}
 PROCESSING_MS: dict[str, float] = {}           # durata primei rulări a pipeline-ului (pentru /api/metrics)
 AUDIT_LOG: dict[str, list[AuditEntry]] = {}    # istoricul TUTUROR rulărilor (o re-rulare HITL nu șterge nimic)
+# Popririle înființate în această sesiune: case_id -> (scenariu, CNP/CUI, poprire). Fiecare scenariu e
+# o „bancă” separată; fără registru, aceeași adresă trimisă de două ori s-ar bloca de două ori (R-DUP-10).
+REGISTERED: dict[str, tuple[str | None, str, ActiveGarnishment]] = {}
 
+_SCENARIO_ID = re.compile(r"[A-Za-z0-9_-]{1,40}")
 UPLOADS_DIR = config.DATA_DIR / "uploads"
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 FINAL_AUTO_STATUSES = {CaseStatus.AUTO_PROCESSED, CaseStatus.LIFTED}
@@ -55,8 +59,9 @@ FINAL_AUTO_STATUSES = {CaseStatus.AUTO_PROCESSED, CaseStatus.LIFTED}
 def load_scenario(scenario_id: str) -> Scenario:
     """Încarcă un scenariu sintetic din data/scenarios/{scenario_id}.json."""
     path = config.SCENARIOS_DIR / f"{scenario_id}.json"
-    if not path.exists():
-        raise HTTPException(status_code=404, detail=f"Scenariul {scenario_id} nu există în {config.SCENARIOS_DIR}")
+    # ID-ul vine din request: fără „../” (altfel se citesc alte fișiere din data/ -> 500)
+    if not _SCENARIO_ID.fullmatch(scenario_id) or not path.exists():
+        raise HTTPException(status_code=404, detail=f"Scenariul {scenario_id} nu există")
     return Scenario.model_validate_json(path.read_text(encoding="utf-8"))
 
 
@@ -110,7 +115,9 @@ def list_scenarios():
     """Returnează lista scenariilor sintetice pregătite de Om3."""
     items: list[ScenarioInfo] = []
     if config.SCENARIOS_DIR.exists():
-        for p in sorted(config.SCENARIOS_DIR.glob("*.json")):
+        # sortare naturală: S2 înainte de S10
+        for p in sorted(config.SCENARIOS_DIR.glob("*.json"),
+                        key=lambda p: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", p.stem)]):
             raw = json.loads(p.read_text(encoding="utf-8"))
             items.append(ScenarioInfo(
                 scenario_id=raw["scenario_id"],
@@ -201,7 +208,7 @@ async def upload_case_document(file: UploadFile = File(...), scenario_id: str = 
             received_at=ts,
             content_type="application/pdf" if is_pdf else "text/plain",
             text=text,
-            pdf_path=stored.relative_to(config.DATA_DIR).as_posix() if is_pdf else None,
+            pdf_path=_data_path(stored) if is_pdf else None,
         ),
     )
     BANKS[case_id] = sc.bank
@@ -236,7 +243,7 @@ def get_response_pdf(case_id: str):
         raise HTTPException(status_code=409,
                             detail="Dosarul nu are adresă de răspuns (excepții nerezolvate sau dosar rutat)")
     path = _response_pdf_renderer()(case.case_id, letter, config.OUTPUT_DIR)
-    case.outcome.response_letter_pdf = path.relative_to(config.DATA_DIR).as_posix()
+    case.outcome.response_letter_pdf = _data_path(path)
     with open(path, "rb") as fh:
         is_pdf = fh.read(5) == b"%PDF-"
     # până când Om3 termină generatorul reportlab, stub-ul scrie text simplu
@@ -275,6 +282,14 @@ def review_case(case_id: str, action: ReviewAction):
     return CASES[case_id]
 
 
+def _data_path(path) -> str:
+    """Cale relativă la data/ (cum o așteaptă contractul); absolută dacă fișierul e în altă parte."""
+    try:
+        return path.relative_to(config.DATA_DIR).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 @lru_cache
 def _response_pdf_renderer():
     """Încarcă `render_bank_response_pdf` din scripts/generate_pdfs.py (scripts/ nu e pachet Python)."""
@@ -299,7 +314,7 @@ def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = 
     else:
         case.module_id = mod.info.module_id
         try:
-            case = mod.process(case, bank, sink.emit, review=review)
+            case = mod.process(case, _bank_with_registered(case, bank), sink.emit, review=review)
         except Exception as exc:  # un document neașteptat la demo nu trebuie să dea 500
             log.exception("Pipeline eșuat pentru %s", case.case_id)
             case.status = CaseStatus.FAILED
@@ -309,9 +324,47 @@ def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = 
     if review is None:
         PROCESSING_MS[case.case_id] = (time.perf_counter() - started) * 1000
     case.updated_at = now()
+    _register(case)
     EVENTS[case.case_id] = [e.model_dump(mode="json") for e in sink.events]
     AUDIT_LOG.setdefault(case.case_id, []).extend(_audit_entries(case, sink))
     return case
+
+
+def _bank_with_registered(case: Case, bank: BankSnapshot) -> BankSnapshot:
+    """Banca scenariului + popririle înființate deja în sesiune pe același client (în afară de dosarul curent)."""
+    customer_ids = {c.national_id: c.customer_id for c in bank.customers}
+    known = {(g.customer_id, g.case_number) for g in bank.active_garnishments}
+    extra = []
+    for case_id, (scenario_id, national_id, g) in REGISTERED.items():
+        if case_id == case.case_id or scenario_id != case.scenario_id or national_id not in customer_ids:
+            continue
+        g = g.model_copy(update={"customer_id": customer_ids[national_id]})
+        if (g.customer_id, g.case_number) not in known:
+            extra.append(g)
+    if not extra:
+        return bank
+    return bank.model_copy(update={"active_garnishments": bank.active_garnishments + extra})
+
+
+def _register(case: Case) -> None:
+    """Ține minte popririle înființate automat; o sistare reușită le scoate din registru."""
+    REGISTERED.pop(case.case_id, None)
+    order, decision, customer = case.order, case.decision, case.customer
+    if not (order and customer):
+        return
+    if (case.status == CaseStatus.AUTO_PROCESSED and order.doc_type == DocType.POPRIRE_INFIINTARE
+            and order.case_number and decision):
+        REGISTERED[case.case_id] = (case.scenario_id, customer.national_id, ActiveGarnishment(
+            garnishment_id=f"G-{case.case_id}", customer_id=customer.customer_id,
+            case_number=order.case_number, issuer_name=order.issuer_name,
+            creditor_name=order.creditor_name or "?", creditor_type=order.creditor_type,
+            total_due=order.total_due, monthly_periodic_take=decision.seizable_periodic,
+            registered_at=case.updated_at))
+    elif case.status == CaseStatus.LIFTED:
+        target = order.references_case_number or order.case_number
+        for case_id in [k for k, (sid, nid, g) in REGISTERED.items()
+                        if sid == case.scenario_id and nid == customer.national_id and g.case_number == target]:
+            del REGISTERED[case_id]
 
 
 def _emit_routed(sink: EventSink, mod) -> None:

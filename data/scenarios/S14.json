@@ -1,0 +1,82 @@
+{
+  "scenario_id": "S14",
+  "title": "Plafon cumulat plin — poprire comercială după pensie alimentară",
+  "description": "Salariu 6.000 RON; pensia alimentară existentă reține deja 3.000 RON/lună (tot plafonul de 1/2). Noua poprire comercială nu mai poate lua nimic din salariu (E04), dar chiria de 1.200 RON e urmăribilă integral.",
+  "document": {
+    "document_id": "DOC-S14",
+    "filename": "adresa_S14.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC STAN MIHAI\nDosarul de executare nr. 7310/2026\nData: 20.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 7310/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: BARBU COSTIN, CNP: 1831010123455\nCreditor: PROVIDENT FINANCIAL ROMANIA IFN S.A.\nNatura creanței: Comercială\nDebit principal: 9.000,00 RON\nCheltuieli de executare: 500,00 RON\nTotal de recuperat: 9.500,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO27CECEB000000000123456.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-014",
+        "full_name": "BARBU COSTIN",
+        "national_id": "1831010123455",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO65RZBR0000060011112222",
+        "customer_id": "CUST-014",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0,
+        "current_balance": 7200
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S14-10",
+        "iban": "RO65RZBR0000060011112222",
+        "booking_date": "2026-10-15",
+        "direction": "CREDIT",
+        "amount": 6000,
+        "counterparty_name": "SC LOGISTIC EXPRES SRL",
+        "counterparty_iban": null,
+        "description": "Salariu octombrie"
+      },
+      {
+        "tx_id": "TX-S14-11",
+        "iban": "RO65RZBR0000060011112222",
+        "booking_date": "2026-10-18",
+        "direction": "CREDIT",
+        "amount": 1200,
+        "counterparty_name": "POPESCU ANDREI",
+        "counterparty_iban": null,
+        "description": "Chirie apartament octombrie"
+      }
+    ],
+    "active_garnishments": [
+      {
+        "garnishment_id": "GARN-014",
+        "customer_id": "CUST-014",
+        "case_number": "212/2025",
+        "issuer_name": "BEJ Dinu Paul",
+        "creditor_name": "BARBU MARIA (pensie întreținere minor)",
+        "creditor_type": "INTRETINERE",
+        "total_due": 72000.0,
+        "amount_recovered": 18000.0,
+        "monthly_periodic_take": 3000.0,
+        "registered_at": "2025-04-01T09:00:00Z",
+        "active": true
+      }
+    ]
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "EXCEPTION_FLAGGED",
+    "amount_to_hold": 1200.0,
+    "exception_codes": [
+      "E04"
+    ],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

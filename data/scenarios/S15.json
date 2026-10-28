@@ -1,0 +1,56 @@
+{
+  "scenario_id": "S15",
+  "title": "Cont în EUR — salariu de la angajator străin",
+  "description": "Contul curent e în EUR. Salariu 1.206,03 EUR (≈ 6.000 RON la cursul BNR mock 4,9750) + sold anterior 200 EUR (995 RON). Urmăribil: 1/3 din salariu (2.000 RON) + soldul (995 RON) = 2.995 RON.",
+  "document": {
+    "document_id": "DOC-S15",
+    "filename": "adresa_S15.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC ROTARU EMIL\nDosarul de executare nr. 9090/2026\nData: 21.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 9090/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: NEAGU VLAD, CNP: 1910527123457\nCreditor: BANCA TRANSILVANIA S.A.\nNatura creanței: Comercială\nDebit principal: 10.000,00 RON\nCheltuieli de executare: 500,00 RON\nTotal de recuperat: 10.500,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO27CECEB000000000123456.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-015",
+        "full_name": "NEAGU VLAD",
+        "national_id": "1910527123457",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO89RZBR0000070012345678",
+        "customer_id": "CUST-015",
+        "account_type": "CURENT",
+        "currency": "EUR",
+        "opening_balance": 200,
+        "current_balance": 1406.03
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S15-10",
+        "iban": "RO89RZBR0000070012345678",
+        "booking_date": "2026-10-10",
+        "direction": "CREDIT",
+        "amount": 1206.03,
+        "counterparty_name": "NORDIC TECH AB",
+        "counterparty_iban": null,
+        "description": "Salariu octombrie"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 2995.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

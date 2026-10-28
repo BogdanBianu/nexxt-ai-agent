@@ -1,0 +1,56 @@
+{
+  "scenario_id": "S10",
+  "title": "Poprire ANAF — creanță fiscală, consemnare la Trezorerie",
+  "description": "ANAF poprește pentru impozite restante (2.300 RON). Salariu 4.500 RON → 1/3 = 1.500 RON pentru creanțe fiscale. Contul de consemnare este la Trezoreria Statului.",
+  "document": {
+    "document_id": "DOC-S10",
+    "filename": "adresa_S10.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "AGENȚIA NAȚIONALĂ DE ADMINISTRARE FISCALĂ — DGRFP CLUJ-NAPOCA\nDosarul de executare nr. 5521/2026\nData: 21.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 5521/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: RUS IOANA, CNP: 2781113123453\nCreditor: STATUL ROMÂN prin ANAF\nNatura creanței: Fiscală\nDebit principal: 2.300,00 RON\nCheltuieli de executare: 0,00 RON\nTotal de recuperat: 2.300,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO82TREZ2165050000000000.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-010",
+        "full_name": "RUS IOANA",
+        "national_id": "2781113123453",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO19RZBR0000060022223333",
+        "customer_id": "CUST-010",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0,
+        "current_balance": 4500
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S10-10",
+        "iban": "RO19RZBR0000060022223333",
+        "booking_date": "2026-10-10",
+        "direction": "CREDIT",
+        "amount": 4500,
+        "counterparty_name": "SC DATA SOFT SRL",
+        "counterparty_iban": null,
+        "description": "Salariu luna septembrie"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 1500.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

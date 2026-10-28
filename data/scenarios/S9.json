@@ -1,0 +1,76 @@
+{
+  "scenario_id": "S9",
+  "title": "Pensionar cu pensie sub salariul minim — protecția venitului minim",
+  "description": "Pensie de 2.000 RON (sub salariul minim net de 2.574 RON). Art. 729 alin. (4): se urmărește 1/3 doar din partea care depășește jumătate din salariul minim (1.287 RON) → 237,67 RON, nu 666,67 RON.",
+  "document": {
+    "document_id": "DOC-S9",
+    "filename": "adresa_S9.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL EXECUTORULUI JUDECĂTORESC VASILE DAN\nDosarul de executare nr. 6100/2026\nData: 20.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: ADRESĂ DE ÎNFIINȚARE A POPRIRII\n\nÎn baza titlului executoriu din dosarul de executare nr. 6100/2026, dispun ÎNFIINȚAREA POPRIRII asupra conturilor deținute de:\nDebitor: MOLDOVAN GHEORGHE, CNP: 1520305123456\nCreditor: CREDIT RAPID IFN S.A.\nNatura creanței: Comercială\nDebit principal: 3.800,00 RON\nCheltuieli de executare: 200,00 RON\nTotal de recuperat: 4.000,00 RON\n\nSumele reținute vor fi consemnate în contul IBAN: RO27CECEB000000000123456.\nPrezenta adresă poartă semnătură și ștampilă oficială L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-009",
+        "full_name": "MOLDOVAN GHEORGHE",
+        "national_id": "1520305123456",
+        "is_legal_entity": false,
+        "status": "ACTIV",
+        "address": "Str. Exemplu nr. 1, Cluj-Napoca"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO54RZBR0000060012345678",
+        "customer_id": "CUST-009",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 0,
+        "current_balance": 2000
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S9-08",
+        "iban": "RO54RZBR0000060012345678",
+        "booking_date": "2026-08-12",
+        "direction": "CREDIT",
+        "amount": 2000,
+        "counterparty_name": "CASA JUDETEANA DE PENSII CLUJ",
+        "counterparty_iban": null,
+        "description": "Pensie limita de varsta"
+      },
+      {
+        "tx_id": "TX-S9-09",
+        "iban": "RO54RZBR0000060012345678",
+        "booking_date": "2026-09-12",
+        "direction": "CREDIT",
+        "amount": 2000,
+        "counterparty_name": "CASA JUDETEANA DE PENSII CLUJ",
+        "counterparty_iban": null,
+        "description": "Pensie limita de varsta"
+      },
+      {
+        "tx_id": "TX-S9-10",
+        "iban": "RO54RZBR0000060012345678",
+        "booking_date": "2026-10-12",
+        "direction": "CREDIT",
+        "amount": 2000,
+        "counterparty_name": "CASA JUDETEANA DE PENSII CLUJ",
+        "counterparty_iban": null,
+        "description": "Pensie limita de varsta"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "POPRIRE_INFIINTARE",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 237.67,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

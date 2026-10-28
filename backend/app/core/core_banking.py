@@ -48,7 +48,23 @@ class CoreBankingMock:
         return next((c for c in self.snapshot.customers if c.national_id == national_id), None)
 
     def get_accounts(self, customer_id: str) -> list[Account]:
+        """Conturile clientului, cu soldurile din valută convertite în RON (ca și tranzacțiile).
+
+        Agenții adună solduri direct (ex. SOLD_ANTERIOR); un sold de 1.000 EUR nu are voie
+        să intre în calcul ca 1.000 RON.
+        """
+        return [self._account_in_ron(a) for a in self._raw_accounts(customer_id)]
+
+    def _raw_accounts(self, customer_id: str) -> list[Account]:
         return [a for a in self.snapshot.accounts if a.customer_id == customer_id]
+
+    @staticmethod
+    def _account_in_ron(acc: Account) -> Account:
+        if acc.currency.upper() == "RON":
+            return acc
+        return acc.model_copy(update={"opening_balance": to_ron(acc.opening_balance, acc.currency),
+                                      "current_balance": to_ron(acc.current_balance, acc.currency),
+                                      "currency": "RON"})
 
     def get_transactions(self, customer_id: str, since: date | None = None) -> list[Transaction]:
         """Tranzacțiile tuturor conturilor clientului, cu sumele din conturile în valută convertite în RON.
@@ -56,7 +72,7 @@ class CoreBankingMock:
         Poprirea se calculează în RON, deci agenții primesc direct echivalentul; suma originală
         rămâne vizibilă în descriere (ex. „[1.000,00 EUR × 4,9750]”).
         """
-        currency = {a.iban: a.currency for a in self.get_accounts(customer_id)}
+        currency = {a.iban: a.currency for a in self._raw_accounts(customer_id)}
         txs = [self._in_ron(t, currency[t.iban]) for t in self.snapshot.transactions if t.iban in currency]
         if since:
             txs = [t for t in txs if t.booking_date >= since]
@@ -73,8 +89,7 @@ class CoreBankingMock:
 
     def balance_in_ron(self, customer_id: str) -> Decimal:
         """Soldul curent cumulat al tuturor conturilor clientului, în RON."""
-        return money(sum((to_ron(a.current_balance, a.currency) for a in self.get_accounts(customer_id)),
-                         Decimal(0)))
+        return money(sum((a.current_balance for a in self.get_accounts(customer_id)), Decimal(0)))
 
     def get_active_garnishments(self, customer_id: str) -> list[ActiveGarnishment]:
         return [g for g in self.snapshot.active_garnishments if g.customer_id == customer_id and g.active]
