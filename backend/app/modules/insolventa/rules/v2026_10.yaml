@@ -1,0 +1,35 @@
+# Registrul de reguli al modulului „Insolvență și succesiuni”. Proprietar: Om2.
+# Orice regulă nouă / modificată -> rulați `pytest backend/tests/test_insolventa.py`.
+# ATENȚIE: articolele trebuie validate de jurist înainte de producție.
+version: "2026.10-INS"
+
+rules:
+  - id: R-INS-01
+    legal_source: "Legea nr. 85/2014, art. 75 alin. (1)"
+    description: >-
+      De la deschiderea procedurii insolvenței se suspendă de drept executările silite asupra averii
+      debitorului: popririle active pe conturile lui nu se mai execută și nu se mai virează sume către executori.
+
+  - id: R-INS-02
+    legal_source: "Legea nr. 85/2014, art. 84 alin. (1)"
+    description: >-
+      După deschiderea procedurii, plățile din conturile debitorului se fac numai în condițiile legii
+      (cu acordul administratorului / lichidatorului judiciar). Conturile se marchează INSOLVENTA în Core Banking.
+
+  - id: R-SUC-01
+    legal_source: "Codul civil, art. 1132–1133"
+    description: >-
+      Certificatul de moștenitor face dovada calității de moștenitor și a cotei fiecăruia. Banca eliberează
+      soldul conturilor defunctului numai moștenitorilor din certificat.
+
+  - id: R-SUC-02
+    legal_source: "Codul civil, art. 1132 (cotele din certificatul de moștenitor)"
+    description: >-
+      Soldul conturilor defunctului se împarte între moștenitori proporțional cu cota fiecăruia.
+      Diferența de rotunjire (bani) revine moștenitorului cu cota cea mai mare.
+
+  - id: R-SUC-03
+    legal_source: "Codul civil, art. 1155 alin. (1)"
+    description: >-
+      Moștenitorii suportă datoriile moștenirii proporțional cu cota lor. Dacă pe defunct există popriri active,
+      ofițerul decide înainte de plata către moștenitori.

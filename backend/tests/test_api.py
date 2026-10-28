@@ -69,9 +69,9 @@ def test_sistare_keeps_router_doc_type_through_langgraph():
 
 
 def test_routed_document_marks_popriri_agents_skipped():
-    """Un document pentru un modul din roadmap (ex. insolvență/necunoscut): router-ul redirecționează, iar agenții apar SKIPPED."""
-    text = "TRIBUNALUL BUCUREȘTI — SECȚIA A VII-A CIVILĂ\nNotificare deschidere procedură generală de insolvență conform Legii 85/2014."
-    case = client.post("/api/cases/upload", files={"file": ("notificare_insolventa.txt", text.encode("utf-8"), "text/plain")},
+    """Un document pentru un modul din roadmap (ex. GDPR/necunoscut): router-ul redirecționează, iar agenții apar SKIPPED."""
+    text = "Către Raiffeisen Bank\nCerere de ștergere a datelor cu caracter personal conform Regulamentului (UE) 2016/679."
+    case = client.post("/api/cases/upload", files={"file": ("cerere_gdpr.txt", text.encode("utf-8"), "text/plain")},
                        data={"scenario_id": "S1"}).json()
     assert case["status"] == "ROUTED_TO_OTHER_MODULE"
     last = {}

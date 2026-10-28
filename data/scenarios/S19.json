@@ -1,0 +1,93 @@
+{
+  "scenario_id": "S19",
+  "title": "Insolvență — 2 popriri suspendate și o plată după deschidere",
+  "description": "Tribunalul notifică deschiderea procedurii generale a insolvenței pentru o firmă client. Cele 2 popriri active se suspendă (Legea 85/2014, art. 75), conturile se marchează INSOLVENTA, iar plata de 20.000 RON făcută după deschidere e semnalată administratorului (E06).",
+  "document": {
+    "document_id": "DOC-S19",
+    "filename": "document_S19.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "TRIBUNALUL BUCUREȘTI — SECȚIA a VII-a CIVILĂ\nAdministrator judiciar: CASA DE INSOLVENȚĂ TRANSILVANIA IPURL\nDosar nr. 12345/3/2026\nData: 20.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: NOTIFICARE PRIVIND DESCHIDEREA PROCEDURII INSOLVENȚEI\n\nPrin încheierea pronunțată în dosarul de mai sus s-a dispus deschiderea procedurii generale a insolvenței, conform Legii nr. 85/2014, împotriva debitorului:\nDebitor: CONSTRUCT PRO SRL, CUI: RO34567892\nData deschiderii procedurii: 15.10.2026\nAdministrator judiciar: CASA DE INSOLVENȚĂ TRANSILVANIA IPURL\nCont unic de insolvență: RO76BTRL0000060099990000\n\nÎn temeiul art. 75 din Legea nr. 85/2014, toate măsurile de executare silită asupra averii debitorului se suspendă de drept. Vă rugăm să comunicați conturile și soldurile debitorului.\nPrezenta notificare poartă semnătură și ștampilă L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-019",
+        "full_name": "CONSTRUCT PRO SRL",
+        "national_id": "34567892",
+        "is_legal_entity": true,
+        "status": "ACTIV",
+        "address": "Str. Exemplu nr. 1, București"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO08RZBR0000060088882222",
+        "customer_id": "CUST-019",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 48250.75,
+        "current_balance": 48250.75
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S19-1",
+        "iban": "RO08RZBR0000060088882222",
+        "booking_date": "2026-10-02",
+        "direction": "CREDIT",
+        "amount": 35000,
+        "counterparty_name": "BETA RETAIL SRL",
+        "counterparty_iban": null,
+        "description": "Incasare factura 118"
+      },
+      {
+        "tx_id": "TX-S19-2",
+        "iban": "RO08RZBR0000060088882222",
+        "booking_date": "2026-10-18",
+        "direction": "DEBIT",
+        "amount": 20000,
+        "counterparty_name": "PRIETEN TRADING SRL",
+        "counterparty_iban": null,
+        "description": "Plata avans contract"
+      }
+    ],
+    "active_garnishments": [
+      {
+        "garnishment_id": "G-S19-1",
+        "customer_id": "CUST-019",
+        "case_number": "880/2026",
+        "issuer_name": "BEJ POPESCU ION",
+        "creditor_name": "LEASING EXPRES IFN SA",
+        "creditor_type": "COMERCIAL",
+        "total_due": 42000,
+        "amount_recovered": 12000,
+        "monthly_periodic_take": 0,
+        "registered_at": "2026-07-01T09:00:00Z"
+      },
+      {
+        "garnishment_id": "G-S19-2",
+        "customer_id": "CUST-019",
+        "case_number": "AJFP-221/2026",
+        "issuer_name": "AJFP ILFOV",
+        "creditor_name": "ANAF",
+        "creditor_type": "FISCAL",
+        "total_due": 9800,
+        "amount_recovered": 0,
+        "monthly_periodic_take": 0,
+        "registered_at": "2026-09-01T09:00:00Z"
+      }
+    ]
+  },
+  "expected": {
+    "doc_type": "NOTIFICARE_INSOLVENTA",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 0.0,
+    "exception_codes": [
+      "E06"
+    ],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

@@ -1,0 +1,64 @@
+{
+  "scenario_id": "S17",
+  "title": "Succesiune — sold împărțit pe 3 moștenitori (cu rotunjire)",
+  "description": "Certificat de moștenitor pentru un client DECEDAT cu un cont în RON și unul în EUR. Soldul total (12.487,51 RON) se împarte pe cotele 1/4, 3/8, 3/8; diferența de 1 ban de la rotunjire revine moștenitorului cu cota cea mai mare.",
+  "document": {
+    "document_id": "DOC-S17",
+    "filename": "document_S17.pdf",
+    "received_at": "2026-10-28T10:00:00Z",
+    "content_type": "text/plain",
+    "text": "BIROUL NOTARIAL INDIVIDUAL MARINESCU ELENA\nNotar public, Str. Lipscani nr. 10, București\nCERTIFICAT DE MOȘTENITOR nr. 45/2026\nData: 20.10.2026\n\nCĂTRE: RAIFFEISEN BANK S.A.\nObiect: comunicare certificat de moștenitor\n\nConstatăm deschisă succesiunea defunctului:\nDefunct: POPESCU GHEORGHE, CNP: 1450304123451, decedat la data de 12.08.2026\n\nMoștenitori și cotele cuvenite:\n1. POPESCU MARIA, CNP: 2520618123460, soție supraviețuitoare, cotă 1/4\n2. POPESCU ANDREI, CNP: 1800911123471, fiu, cotă 3/8\n3. IONESCU ELENA, CNP: 2851203123488, fiică, cotă 3/8\n\nPrezentul certificat poartă semnătura și ștampila notarului public L.S.",
+    "pdf_path": null
+  },
+  "bank": {
+    "customers": [
+      {
+        "customer_id": "CUST-017",
+        "full_name": "POPESCU GHEORGHE",
+        "national_id": "1450304123451",
+        "is_legal_entity": false,
+        "status": "DECEDAT",
+        "address": "Str. Exemplu nr. 1, București"
+      }
+    ],
+    "accounts": [
+      {
+        "iban": "RO54RZBR0000060077771111",
+        "customer_id": "CUST-017",
+        "account_type": "CURENT",
+        "currency": "RON",
+        "opening_balance": 10000.01,
+        "current_balance": 10000.01
+      },
+      {
+        "iban": "RO30RZBR0000060077772222",
+        "customer_id": "CUST-017",
+        "account_type": "ECONOMII",
+        "currency": "EUR",
+        "opening_balance": 500,
+        "current_balance": 500
+      }
+    ],
+    "transactions": [
+      {
+        "tx_id": "TX-S17-1",
+        "iban": "RO54RZBR0000060077771111",
+        "booking_date": "2026-08-01",
+        "direction": "CREDIT",
+        "amount": 3200,
+        "counterparty_name": "CASA JUDETEANA DE PENSII",
+        "counterparty_iban": null,
+        "description": "Pensie august"
+      }
+    ],
+    "active_garnishments": []
+  },
+  "expected": {
+    "doc_type": "CERTIFICAT_MOSTENITOR",
+    "status": "AUTO_PROCESSED",
+    "amount_to_hold": 0.0,
+    "exception_codes": [],
+    "amount_after_review": null
+  },
+  "demo_review": null
+}

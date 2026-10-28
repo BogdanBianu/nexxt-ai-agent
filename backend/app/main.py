@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from app import config
 from app.contracts import (
     ActiveGarnishment, AgentName, AgentStatus, AuditEntry, BankSnapshot, DocType, Case, CaseStatus, CaseSummary, CreateCaseFromScenario,
+    CustomerStatus,
     IncomingDocument, ModuleInfo, PlatformMetrics, ReviewAction, RuleBookInfo, Scenario, ScenarioInfo,
 )
 from app.core.events import EventSink, now
@@ -49,6 +50,9 @@ AUDIT_LOG: dict[str, list[AuditEntry]] = {}    # istoricul TUTUROR rulărilor (o
 # Popririle înființate în această sesiune: case_id -> (scenariu, CNP/CUI, poprire). Fiecare scenariu e
 # o „bancă” separată; fără registru, aceeași adresă trimisă de două ori s-ar bloca de două ori (R-DUP-10).
 REGISTERED: dict[str, tuple[str | None, str, ActiveGarnishment]] = {}
+# Insolvențele înregistrate în sesiune: case_id -> (scenariu, CUI). Clientul devine INSOLVENTA pentru
+# documentele următoare, iar popririle lui sunt suspendate (Legea 85/2014, art. 75).
+INSOLVENT: dict[str, tuple[str | None, str]] = {}
 
 _SCENARIO_ID = re.compile(r"[A-Za-z0-9_-]{1,40}")
 UPLOADS_DIR = config.DATA_DIR / "uploads"
@@ -331,7 +335,9 @@ def _run_pipeline(case: Case, bank: BankSnapshot, review: ReviewAction | None = 
 
 
 def _bank_with_registered(case: Case, bank: BankSnapshot) -> BankSnapshot:
-    """Banca scenariului + popririle înființate deja în sesiune pe același client (în afară de dosarul curent)."""
+    """Banca scenariului + ce s-a înregistrat deja în sesiune pe același client (în afară de dosarul curent):
+    popririle înființate și insolvențele (client INSOLVENTA, popriri suspendate)."""
+    bank = _bank_with_insolvencies(case, bank)
     customer_ids = {c.national_id: c.customer_id for c in bank.customers}
     known = {(g.customer_id, g.case_number) for g in bank.active_garnishments}
     extra = []
@@ -346,12 +352,32 @@ def _bank_with_registered(case: Case, bank: BankSnapshot) -> BankSnapshot:
     return bank.model_copy(update={"active_garnishments": bank.active_garnishments + extra})
 
 
+def _bank_with_insolvencies(case: Case, bank: BankSnapshot) -> BankSnapshot:
+    insolvent = {nid for case_id, (sid, nid) in INSOLVENT.items()
+                 if case_id != case.case_id and sid == case.scenario_id}
+    hit = {c.customer_id for c in bank.customers if c.national_id in insolvent}
+    if not hit:
+        return bank
+    return bank.model_copy(update={
+        "customers": [c.model_copy(update={"status": CustomerStatus.INSOLVENTA}) if c.customer_id in hit else c
+                      for c in bank.customers],
+        "active_garnishments": [g.model_copy(update={"active": False}) if g.customer_id in hit else g
+                                for g in bank.active_garnishments],
+    })
+
+
 def _register(case: Case) -> None:
     """Ține minte popririle înființate automat; o sistare reușită le scoate din registru."""
     REGISTERED.pop(case.case_id, None)
+    INSOLVENT.pop(case.case_id, None)
     order, decision, customer = case.order, case.decision, case.customer
     if not (order and customer):
         return
+    if case.status == CaseStatus.AUTO_PROCESSED and order.doc_type == DocType.NOTIFICARE_INSOLVENTA:
+        INSOLVENT[case.case_id] = (case.scenario_id, customer.national_id)
+        for case_id in [k for k, (sid, nid, _g) in REGISTERED.items()
+                        if sid == case.scenario_id and nid == customer.national_id]:
+            del REGISTERED[case_id]           # popririle înființate în sesiune sunt suspendate
     if (case.status == CaseStatus.AUTO_PROCESSED and order.doc_type == DocType.POPRIRE_INFIINTARE
             and order.case_number and decision):
         REGISTERED[case.case_id] = (case.scenario_id, customer.national_id, ActiveGarnishment(

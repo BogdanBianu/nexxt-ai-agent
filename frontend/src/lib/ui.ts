@@ -72,6 +72,8 @@ export const DOC_LABEL: Record<DocType, string> = {
   POPRIRE_MODIFICARE: "Modificare poprire",
   CERERE_INFORMATII: "Cerere informații",
   CERERE_AUTORITATE: "Cerere autoritate",
+  NOTIFICARE_INSOLVENTA: "Notificare insolvență",
+  CERTIFICAT_MOSTENITOR: "Certificat de moștenitor",
   NECUNOSCUT: "Necunoscut",
 };
 
@@ -125,7 +127,7 @@ const MODULE_NAME: Record<string, string> = {
   popriri: "PopririZero",
   autoritati: "Cereri autorități",
   sechestre: "Sechestre asigurătorii",
-  insolvente: "Insolvență și succesiuni",
+  insolventa: "Insolvență și succesiuni",
   gdpr: "Cereri GDPR",
 };
 

@@ -7,7 +7,7 @@ import { caseTitle, DOC_LABEL, formatDate, formatRon, humanize } from "../lib/ui
 const MODULE_LABEL: Record<string, string> = {
   autoritati: "Cereri autorități",
   sechestre: "Sechestre asigurătorii",
-  insolvente: "Insolvență și succesiuni",
+  insolventa: "Insolvență și succesiuni",
   gdpr: "Cereri GDPR",
 };
 import { StatusChip } from "./StatusChip";
