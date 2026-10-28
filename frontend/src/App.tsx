@@ -9,6 +9,7 @@ import { AuditTrail } from "./components/AuditTrail";
 import { CaseInbox } from "./components/CaseInbox";
 import { DocumentViewer } from "./components/DocumentViewer";
 import { HitlWorkbench, ReviewHistory } from "./components/HitlWorkbench";
+import { ServerDown } from "./components/ServerDown";
 import type { Case } from "./types/contracts";
 import { formatRon } from "./lib/ui";
 
@@ -61,60 +62,81 @@ export default function App() {
 
   const onReplayDone = useCallback(() => setReplayDone(true), []);
 
-  useEffect(() => {
+  // Documentele redirecționate (ex. cereri de la Poliție) nu au sume, fișă de poprire sau extras
+  const routed = current?.status === "ROUTED_TO_OTHER_MODULE";
+  const activeTab: Tab = routed && tab === "analysis" ? "documents" : tab;
+
+  const [caseError, setCaseError] = useState(false);
+
+  const loadCase = useCallback(() => {
     if (!selectedId) return;
-    setCurrent(null);
-    api.getCase(selectedId).then(setCurrent);
+    api
+      .getCase(selectedId)
+      .then((c) => {
+        setCurrent(c);
+        setCaseError(false);
+      })
+      .catch(() => setCaseError(true));
   }, [selectedId]);
+
+  useEffect(() => {
+    setCurrent(null);
+    setCaseError(false);
+    loadCase();
+  }, [loadCase]);
 
   return (
     <AppShell onHome={home}>
       {!selectedId ? (
         <CaseInbox onOpen={open} />
       ) : (
-        <>
-          {current && <CaseHeader data={current} pending={!replayDone} onBack={home} notice={notice} />}
-          <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-            <div className="min-w-0 space-y-10">
-              {current && <CaseFigures data={current} pending={!replayDone} />}
-              {current && replayDone && <HitlWorkbench data={current} onUpdated={onReviewed} />}
-              {current && <CaseFacts data={current} />}
-              {current && replayDone && (
-                <div>
-                  <div role="tablist" aria-label="Secțiuni dosar" className="flex gap-6 border-b border-line">
-                    {TABS.map((t) => (
-                      <button
-                        key={t.id}
-                        role="tab"
-                        aria-selected={tab === t.id}
-                        onClick={() => setTab(t.id)}
-                        className={`-mb-px border-b-2 pb-2.5 text-[15px] font-bold transition-colors duration-150 ${
-                          tab === t.id ? "border-ink" : "border-transparent text-muted hover:text-ink"
-                        }`}
-                      >
-                        {t.label}
-                        {t.id === "audit" && current.audit?.length ? <span className="ml-1.5 font-medium text-muted">{current.audit.length}</span> : null}
-                      </button>
-                    ))}
+        caseError && !current ? (
+          <ServerDown onRetry={loadCase} />
+        ) : (
+          <>
+            {current && <CaseHeader data={current} pending={!replayDone} onBack={home} notice={notice} />}
+            <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+              <div className="min-w-0 space-y-10">
+                {current && !routed && <CaseFigures data={current} pending={!replayDone} />}
+                {current && replayDone && <HitlWorkbench data={current} onUpdated={onReviewed} />}
+                {current && !routed && <CaseFacts data={current} />}
+                {current && replayDone && (
+                  <div>
+                    <div role="tablist" aria-label="Secțiuni dosar" className="flex gap-6 border-b border-line">
+                      {TABS.filter((t) => !(routed && t.id === "analysis")).map((t) => (
+                        <button
+                          key={t.id}
+                          role="tab"
+                          aria-selected={activeTab === t.id}
+                          onClick={() => setTab(t.id)}
+                          className={`-mb-px border-b-2 pb-2.5 text-[15px] font-bold transition-colors duration-150 ${
+                            activeTab === t.id ? "border-ink" : "border-transparent text-muted hover:text-ink"
+                          }`}
+                        >
+                          {t.label}
+                          {t.id === "audit" && current.audit?.length ? <span className="ml-1.5 font-medium text-muted">{current.audit.length}</span> : null}
+                        </button>
+                      ))}
+                    </div>
+                    <div role="tabpanel" className="pt-6">
+                      {activeTab === "analysis" && <AccountDissection data={current} />}
+                      {activeTab === "documents" && <DocumentViewer data={current} />}
+                      {activeTab === "audit" && (
+                        <div className="space-y-10">
+                          <ReviewHistory data={current} />
+                          <AuditTrail data={current} />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div role="tabpanel" className="pt-6">
-                    {tab === "analysis" && <AccountDissection data={current} />}
-                    {tab === "documents" && <DocumentViewer data={current} />}
-                    {tab === "audit" && (
-                      <div className="space-y-10">
-                        <ReviewHistory data={current} />
-                        <AuditTrail data={current} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
+              <aside className="space-y-6">
+                <AgentPipeline caseId={selectedId} animate={animate} data={current} onReplayDone={onReplayDone} runKey={runKey} />
+              </aside>
             </div>
-            <aside className="space-y-6">
-              <AgentPipeline caseId={selectedId} animate={animate} data={current} onReplayDone={onReplayDone} runKey={runKey} />
-            </aside>
-          </div>
-        </>
+          </>
+        )
       )}
     </AppShell>
   );

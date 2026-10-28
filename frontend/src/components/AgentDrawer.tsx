@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, ChevronDown, OctagonAlert, X } from "lucide-react";
 import type { AgentEvent, AgentName, Case, ExceptionFlag } from "../types/contracts";
-import { CATEGORY_LABEL, DOC_LABEL, formatDate, formatRon, formatTime, PIPELINE, STATUS_STYLE } from "../lib/ui";
+import { humanize, CATEGORY_LABEL, DOC_LABEL, formatDate, formatRon, formatTime, PIPELINE, STATUS_STYLE } from "../lib/ui";
 
 const METHOD_LABEL: Record<string, string> = {
   KEYWORD: "cuvânt-cheie în descriere",
@@ -120,7 +120,7 @@ function AgentBody({ agent, events, data }: { agent: AgentName; events: AgentEve
           </Block>
           {typeof d.reason === "string" && (
             <Block title="De ce">
-              <p>{d.reason}</p>
+              <p>{humanize(d.reason)}</p>
             </Block>
           )}
         </>
@@ -290,7 +290,7 @@ function AgentBody({ agent, events, data }: { agent: AgentName; events: AgentEve
         <Block title="Decizia finală">
           <Row label="Status">{STATUS_STYLE[data.status].label}</Row>
           <Row label="Scrisoare de răspuns">{data.outcome?.response_letter_text ? "Generată" : "Negenerată"}</Row>
-          {data.outcome && <p className="mt-3">{data.outcome.summary}</p>}
+          {data.outcome && <p className="mt-3">{humanize(data.outcome.summary)}</p>}
         </Block>
       );
   }
@@ -311,7 +311,7 @@ function ExceptionCard({ e, data }: { e: ExceptionFlag; data: Case }) {
       <OctagonAlert size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden />
       <div className="min-w-0 text-sm">
         <p className="font-bold text-danger-ink">{e.severity === "BLOCKING" ? "Problemă blocantă" : "Avertisment"}</p>
-        <p className="mt-0.5">{e.message}</p>
+        <p className="mt-0.5">{humanize(e.message)}</p>
         {tx && <p className="mt-1.5 text-xs text-muted">Dovezi: {tx}</p>}
       </div>
     </div>
@@ -401,7 +401,7 @@ export function AgentDrawer({ agent, events, data, onNavigate, onClose }: Props)
               {last?.status === "SKIPPED" && (
                 <p className="mx-6 mt-5 rounded-lg bg-canvas px-4 py-3 text-sm">
                   <span className="font-semibold">Oprit: </span>
-                  {last.message}
+                  {humanize(last.message)}
                 </p>
               )}
               <AgentBody agent={agent} events={mine} data={data} />
