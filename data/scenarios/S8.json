@@ -1,7 +1,7 @@
 {
   "scenario_id": "S8",
   "title": "Solicitare de la Inspectoratul de Poliție (Demo Platformă LexOps)",
-  "description": "Adresă oficială de la Inspectoratul General al Poliției Române într-un dosar penal. Router-ul o clasifică ca CERERE_AUTORITATE și o redirecționează automat către modulul 'autoritati' (în roadmap). Demonstrează capacitatea platformei LexOps de triaj multi-modul.",
+  "description": "Adresă oficială de la Inspectoratul General al Poliției Române într-un dosar penal (Art. 170 CPP). Router-ul o clasifică ca CERERE_AUTORITATE și o trimite către modulul activ 'autoritati', care verifică temeiul legal (secretul bancar), identifică contul și generează răspunsul oficial către IGPR.",
   "document": {
     "document_id": "DOC-S8",
     "filename": "adresa_igpr_dosar_penal_2026.pdf",
@@ -36,7 +36,7 @@
   },
   "expected": {
     "doc_type": "CERERE_AUTORITATE",
-    "status": "ROUTED_TO_OTHER_MODULE",
+    "status": "AUTO_PROCESSED",
     "amount_to_hold": 0.0,
     "exception_codes": [],
     "amount_after_review": null
