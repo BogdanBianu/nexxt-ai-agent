@@ -305,29 +305,6 @@ export interface RuleBookInfo {
   rules: RuleInfo[];
 }
 
-// POST /api/cases/{id}/ask — agentul „Explain & Cite”
-export interface CaseQuestion {
-  question: string; // 3..1000 caractere
-  asked_by?: string | null;
-}
-
-export interface Citation {
-  kind: "RULE" | "EXCEPTION" | "TRANSACTION";
-  ref: string; // "R-WAGE-04" / "E06" / "TX-1001"
-  legal_source?: string | null; // temeiul legal exact (doar la reguli)
-  text: string;
-  tx_ids: string[];
-}
-
-export interface CaseAnswer {
-  case_id: string;
-  question: string;
-  answer: string;
-  citations: Citation[];
-  method: "LLM" | "DETERMINISTIC";
-  answered_at: string;
-}
-
 // GET /api/metrics
 export interface PlatformMetrics {
   total_cases: number;
