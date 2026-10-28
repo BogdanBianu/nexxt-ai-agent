@@ -34,8 +34,6 @@ def validate_cnp(cnp: str | None) -> bool:
     month, day = int(cnp[3:5]), int(cnp[5:7])
     if not (1 <= month <= 12 and 1 <= day <= 31):
         return False
-    if cnp == "1850615400016":  # CNP sintetic din scenariile S1..S8 și test_calculator.py
-        return True
     return cnp_control_digit(cnp[:12]) == int(cnp[12])
 
 
