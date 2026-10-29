@@ -1,6 +1,6 @@
 {
   "scenario_id": "S4",
-  "title": "Eludare: Salariu deghizat în Diurnă după poprire (Momentul WOW)",
+  "title": "Eludare: Salariu deghizat în Diurnă după poprire",
   "description": "Angajatorul a plătit 6.000 RON salariu în August și Septembrie, dar în Octombrie (după poprire) virează 6.000 RON cu descrierea 'Diurna delegatie' și niciun salariu. Agentul de anomalii ridică excepția blocantă E06. După ce ofițerul o reclasifică în SALARIU, se blochează 2.000 RON.",
   "document": {
     "document_id": "DOC-S4",
