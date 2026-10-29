@@ -186,7 +186,7 @@ Proiect realizat de echipa **Hegemind**:
 - Bălașa Ștefan-Daniel
 - Bianu Bogdan
 - Toderașc Octavian
-- Chiculița Rareș
+- Chiculiță Rareș-Andrei
 - Solomon Teodor
 
 > Temeiurile legale din reguli sunt pentru demonstrație și trebuie validate de un jurist înainte de orice utilizare reală.
