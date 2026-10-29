@@ -122,6 +122,19 @@ Scenariile sintetice din `data/scenarios/` (document + situația din bancă + re
 
 PDF-urile pentru S1–S24 sunt în `data/pdfs/` și se pot încărca direct din interfață (individual sau în lot); orice scenariu se poate rula și prin `POST /api/cases/from-scenario`.
 
+### Cazuri de test pentru drag & drop
+
+Folderul [`cazuri-test-drag-and-drop/`](cazuri-test-drag-and-drop/) are 4 PDF-uri fictive, gata de tras în căsuța de încărcare de pe pagina de start, ca să vezi încărcarea în lot și agenții lucrând live:
+
+| Fișier | Ce este | Ce face LexOps |
+|---|---|---|
+| `CASE-UP-751EE2_S5.pdf` | Înființare poprire, Ionescu Mihai, 8.000 RON | Oprește dosarul: CNP-ul din adresă e invalid (E01, debitor neidentificat) |
+| `CASE-UP-0776DA_S6.pdf` | Înființare poprire, Dragomir Vasile, 22.000 RON | Oprește dosarul: poprirea există deja pe același dosar de executare (E02, duplicat) |
+| `CASE-UP-769E88_S7.pdf` | Sistare poprire, Stănescu Andrei | Conform: propune ridicarea popririi, de aprobat |
+| `CASE-UP-0898DF_S8.pdf` | Cerere de informații de la Poliție (dosar penal) | Rutată la Cereri autorități, conformă, de aprobat |
+
+Selectează toate cele 4 fișiere și trage-le în căsuță: agenții le iau pe rând, iar dosarele apar în tabelul „Toate dosarele”. Numele fișierelor trebuie să păstreze sufixul `_S5`, `_S6` etc., pentru că din el aplicația știe ce client fictiv (scenariu) să folosească. Toate datele (nume, CNP-uri, IBAN-uri, dosare) sunt inventate.
+
 ## API (principalele endpoint-uri)
 
 | Metodă | Endpoint | Rol |
@@ -155,6 +168,7 @@ frontend/src/
   types/contracts.ts     Oglinda TypeScript a contractului de date
   api/client.ts          Client HTTP către FastAPI
   components/            Pagini și panouri (listă dosare, agenți live, HITL, aprobare, statistici)
+cazuri-test-drag-and-drop/  4 PDF-uri fictive (S5–S8) pentru încărcarea în lot din interfață
 data/
   scenarios/             Scenariile S1–S26
   pdfs/                  PDF-urile demo
