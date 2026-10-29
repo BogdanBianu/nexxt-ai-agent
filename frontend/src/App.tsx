@@ -30,19 +30,79 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "audit", label: "Jurnal de audit" },
 ];
 
+interface NavState {
+  view: string | null;
+  selectedId: string | null;
+  tab: Tab;
+}
+
+const VALID_TABS: Tab[] = ["analysis", "documents", "audit"];
+
+function readNavFromLocation(): NavState {
+  const s = window.history.state as Partial<NavState> | null;
+  const params = new URLSearchParams(window.location.search);
+  const view = s && "view" in s ? (s.view ?? null) : params.get("view");
+  const selectedId = s && "selectedId" in s ? (s.selectedId ?? null) : params.get("case");
+  const rawTab = (s && "tab" in s ? s.tab : params.get("tab")) as Tab | null;
+  const tab: Tab = rawTab && VALID_TABS.includes(rawTab) ? rawTab : "analysis";
+  return { view: view || null, selectedId: selectedId || null, tab };
+}
+
+function buildNavUrl(nav: NavState): string {
+  const params = new URLSearchParams();
+  if (nav.view) params.set("view", nav.view);
+  if (nav.selectedId) {
+    params.set("case", nav.selectedId);
+    if (nav.tab !== "analysis") params.set("tab", nav.tab);
+  }
+  const qs = params.toString();
+  return `${window.location.pathname}${qs ? `?${qs}` : ""}`;
+}
+
+function pushNavState(nav: NavState) {
+  const cur = readNavFromLocation();
+  if (cur.view === nav.view && cur.selectedId === nav.selectedId && cur.tab === nav.tab) {
+    return;
+  }
+  window.history.pushState(nav, "", buildNavUrl(nav));
+}
+
 export default function App() {
   // Modulul a cărui listă e deschisă; null = pagina de start
-  const [view, setView] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [view, setView] = useState<string | null>(() => readNavFromLocation().view);
+  const [selectedId, setSelectedId] = useState<string | null>(() => readNavFromLocation().selectedId);
   const [animate, setAnimate] = useState(false);
-  const [replayDone, setReplayDone] = useState(false);
+  const [replayDone, setReplayDone] = useState(() => readNavFromLocation().selectedId !== null);
   const [current, setCurrent] = useState<Case | null>(null);
   const [runKey, setRunKey] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("analysis");
+  const [tab, setTab] = useState<Tab>(() => readNavFromLocation().tab);
   // Tranziția galbenă rulează o singură dată, la intrarea pe site
   const [intro, setIntro] = useState(true);
   const introDone = useCallback(() => setIntro(false), []);
+
+  // Sincronizare cu butoanele Back / Forward ale browserului
+  useEffect(() => {
+    const initial = readNavFromLocation();
+    window.history.replaceState(initial, "", buildNavUrl(initial));
+
+    const onPopState = () => {
+      const next = readNavFromLocation();
+      setView(next.view);
+      setSelectedId(next.selectedId);
+      setTab(next.tab);
+      setAnimate(false);
+      setReplayDone(true);
+      setNotice(null);
+      if (!next.selectedId) {
+        setCurrent(null);
+      }
+      window.scrollTo({ top: 0 });
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const open = useCallback((caseId: string, fresh: boolean) => {
     setSelectedId(caseId);
@@ -50,8 +110,9 @@ export default function App() {
     setReplayDone(!fresh);
     setNotice(null);
     setTab("analysis");
+    pushNavState({ view, selectedId: caseId, tab: "analysis" });
     window.scrollTo({ top: 0 });
-  }, []);
+  }, [view]);
 
   // După decizia ofițerului: dosarul recalculat + redăm agenții care au rulat din nou
   const onReviewed = useCallback((updated: Case) => {
@@ -83,6 +144,7 @@ export default function App() {
     setView(null);
     setSelectedId(null);
     setCurrent(null);
+    pushNavState({ view: null, selectedId: null, tab: "analysis" });
     window.scrollTo({ top: 0 });
   }, []);
 
@@ -90,16 +152,24 @@ export default function App() {
     setView(moduleId);
     setSelectedId(null);
     setCurrent(null);
+    pushNavState({ view: moduleId, selectedId: null, tab: "analysis" });
     window.scrollTo({ top: 0 });
   }, []);
 
   // „Toate dosarele” duce la lista modulului dosarului, chiar dacă a fost deschis de pe pagina de start
   const back = useCallback(() => {
-    setView((v) => (current ? moduleOf(current) : (v ?? "popriri")));
+    const nextView = current ? moduleOf(current) : (view ?? "popriri");
+    setView(nextView);
     setSelectedId(null);
     setCurrent(null);
+    pushNavState({ view: nextView, selectedId: null, tab: "analysis" });
     window.scrollTo({ top: 0 });
-  }, [current]);
+  }, [current, view]);
+
+  const changeTab = useCallback((nextTab: Tab) => {
+    setTab(nextTab);
+    pushNavState({ view, selectedId, tab: nextTab });
+  }, [view, selectedId]);
 
   const onReplayDone = useCallback(() => setReplayDone(true), []);
 
@@ -122,8 +192,18 @@ export default function App() {
         setCurrent(c);
         setCaseError(false);
       })
-      .catch(() => setCaseError(true));
-  }, [selectedId]);
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.message.startsWith("HTTP 404")) {
+          const fallback: NavState = { view, selectedId: null, tab: "analysis" };
+          setSelectedId(null);
+          setCurrent(null);
+          setCaseError(false);
+          window.history.replaceState(fallback, "", buildNavUrl(fallback));
+          return;
+        }
+        setCaseError(true);
+      });
+  }, [selectedId, view]);
 
   useEffect(() => {
     setCurrent(null);
@@ -171,7 +251,7 @@ export default function App() {
                           key={t.id}
                           role="tab"
                           aria-selected={activeTab === t.id}
-                          onClick={() => setTab(t.id)}
+                          onClick={() => changeTab(t.id)}
                           className={`-mb-px border-b-2 pb-2.5 text-[15px] font-bold transition-colors duration-150 ${
                             activeTab === t.id ? "border-ink" : "border-transparent text-muted hover:text-ink"
                           }`}
