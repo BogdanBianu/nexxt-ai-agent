@@ -57,9 +57,6 @@ function TopKpis({ ai }: { ai: AiTelemetry }) {
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <Kpi icon={<Coins size={16} aria-hidden />} label="Cost total AI" value={usd(ai.total_cost_usd)}>
         <p>{eurSmall(ai.total_cost_eur)}</p>
-        <p>
-          <span className="font-semibold text-ink">{usd(ai.avg_cost_per_case_usd)}</span> în medie per dosar
-        </p>
       </Kpi>
 
       <Kpi
@@ -111,7 +108,6 @@ function TopKpis({ ai }: { ai: AiTelemetry }) {
 }
 
 function Comparison({ ai, avgProcessingMs }: { ai: AiTelemetry; avgProcessingMs: number }) {
-  const cheaper = ai.avg_cost_per_case_eur > 0 ? Math.round(ai.manual_cost_per_case_eur / ai.avg_cost_per_case_eur) : null;
   return (
     <section aria-labelledby="compare-title">
       <h2 id="compare-title" className="display text-2xl">
@@ -123,15 +119,9 @@ function Comparison({ ai, avgProcessingMs }: { ai: AiTelemetry; avgProcessingMs:
             <UserRound size={18} aria-hidden />
             Procesare tradițională (ofițer bancar)
           </p>
-          <dl className="mt-5 grid grid-cols-2 gap-4">
-            <div>
-              <dt className="text-sm text-muted">Timp per dosar</dt>
-              <dd className="display mt-1 text-3xl tabular-nums">{num(ai.manual_minutes_per_case)} min</dd>
-            </div>
-            <div>
-              <dt className="text-sm text-muted">Cost per dosar</dt>
-              <dd className="display mt-1 text-3xl tabular-nums">{eur(ai.manual_cost_per_case_eur)}</dd>
-            </div>
+          <dl className="mt-5">
+            <dt className="text-sm text-muted">Timp per dosar</dt>
+            <dd className="display mt-1 text-3xl tabular-nums">{num(ai.manual_minutes_per_case)} min</dd>
           </dl>
           <p className="mt-5 border-t border-line pt-4 text-sm">
             Cost manual evitat până acum: <span className="font-bold">{eur(ai.manual_cost_avoided_eur)}</span>
@@ -143,24 +133,12 @@ function Comparison({ ai, avgProcessingMs }: { ai: AiTelemetry; avgProcessingMs:
             <Bot size={18} aria-hidden />
             Procesare LexOps (AWS Bedrock Nova Pro)
           </p>
-          <dl className="mt-5 grid grid-cols-2 gap-4">
-            <div>
-              <dt className="text-sm text-muted">Timp per dosar</dt>
-              <dd className="display mt-1 text-3xl tabular-nums">{duration(avgProcessingMs)}</dd>
-            </div>
-            <div>
-              <dt className="text-sm text-muted">Cost per dosar</dt>
-              <dd className="display mt-1 text-3xl tabular-nums">{eurSmall(ai.avg_cost_per_case_eur)}</dd>
-            </div>
+          <dl className="mt-5">
+            <dt className="text-sm text-muted">Timp per dosar</dt>
+            <dd className="display mt-1 text-3xl tabular-nums">{duration(avgProcessingMs)}</dd>
           </dl>
           <p className="mt-5 border-t border-ink/10 pt-4 text-sm">
-            {cheaper != null ? (
-              <>
-                De <span className="font-bold">{cheaper.toLocaleString("ro-RO")} ori</span> mai ieftin decât procesarea manuală.
-              </>
-            ) : (
-              "Fără apeluri AI facturate încă: costul AI e practic zero."
-            )}
+            Cost AI total până acum: <span className="font-bold">{eurSmall(ai.total_cost_eur)}</span>
           </p>
         </div>
       </div>
