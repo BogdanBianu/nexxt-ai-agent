@@ -129,7 +129,7 @@ const METHOD_SHORT: Record<string, string> = {
 };
 
 const MODULE_NAME: Record<string, string> = {
-  popriri: "PopririZero",
+  popriri: "Popriri",
   autoritati: "Cereri autorități",
   sechestre: "Sechestre asigurătorii",
   insolventa: "Insolvență și succesiuni",
@@ -152,7 +152,7 @@ const SINGULAR: [RegExp, string][] = [
 // Traduce enum-urile, formatează sumele și corectează pluralul din mesajele agenților
 export function humanize(msg: string | null | undefined): string {
   if (!msg) return "";
-  let s = msg.replace(/(\d+(?:\.\d+)?)\s?RON\b/g, (_, n) => formatRon(Number(n)));
+  let s = msg.replace(/PopririZero/g, "Popriri").replace(/(\d+(?:\.\d+)?)\s?RON\b/g, (_, n) => formatRon(Number(n)));
   s = s.replace(/→ ([a-z_]+) \(([^)]+)\)/g, (_, id, name) => `→ modulul ${name === "Roadmap" ? (MODULE_NAME[id] ?? id) : name}`);
   s = s.replace(/\b(KEYWORD|PAYER_REGISTRY|PATTERN|LLM|HUMAN|FALLBACK|REGEX)\b/g, (m) => METHOD_SHORT[m] ?? m);
   s = s.replace(/\b[A-Z][A-Z_]{3,}\b/g, (m) => {

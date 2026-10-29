@@ -61,7 +61,7 @@ export function DocumentViewer({ data }: { data: Case }) {
     data.status === "REJECTED"
       ? "Dosarul a fost respins de un angajat; banca nu trimite răspunsul generat de agent."
       : data.status === "ROUTED_TO_OTHER_MODULE"
-      ? "Documentul a fost redirecționat către alt modul; PopririZero nu generează răspuns."
+      ? "Documentul a fost redirecționat către alt modul; modulul Popriri nu generează răspuns."
       : data.exceptions.some((e) => !e.resolved)
         ? "Răspunsul către executor se generează după ce rezolvi problemele dosarului."
         : "Pentru acest dosar nu s-a generat un răspuns.";

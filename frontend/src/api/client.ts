@@ -25,7 +25,9 @@ async function json<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listModules: () => json<ModuleInfo[]>("/api/modules"),
+  // Backend-ul îl numește „PopririZero”; în interfață modulul e doar „Popriri”
+  listModules: () =>
+    json<ModuleInfo[]>("/api/modules").then((ms) => ms.map((m) => (m.module_id === "popriri" ? { ...m, name: "Popriri" } : m))),
   listScenarios: () => json<ScenarioInfo[]>("/api/scenarios"),
   listCases: () => json<CaseSummary[]>("/api/cases"),
   getMetrics: () => json<PlatformMetrics>("/api/metrics"),

@@ -67,7 +67,7 @@ export function CaseHeader({ data, pending, onBack, notice }: Props) {
             <p className="mt-1">
               Agentul de primire l-a clasificat ca {DOC_LABEL[data.doc_type].toLowerCase()} și l-a redirecționat către{" "}
               {data.module_id && MODULE_LABEL[data.module_id] ? `modulul ${MODULE_LABEL[data.module_id]}` : "alt modul"}, aflat încă în dezvoltare.
-              PopririZero nu blochează sume și nu răspunde la acest document.
+              Modulul Popriri nu blochează sume și nu răspunde la acest document.
             </p>
           </div>
         </div>
