@@ -54,7 +54,7 @@ Fiecare pas (agent, regulă, decizie umană) intră în **jurnalul de audit**, e
 ### 1. Backend (http://localhost:8000, documentație Swagger la `/docs`)
 
 ```bash
-cp .env.example .env            # apoi completează credențialele AWS Bedrock
+cp .env.example .env            # apoi completează credențialele AWS Bedrock (vezi „De unde iei cheile AWS”)
 python -m venv .venv
 .venv\Scripts\activate          # Windows; pe macOS/Linux: source .venv/bin/activate
 pip install -r backend/requirements.txt
@@ -94,6 +94,15 @@ Pentru rulări rapide și offline, setează `USE_LLM=off`.
 | `USD_EUR_RATE`, `OFFICER_MINUTES_PER_CASE`, `OFFICER_HOURLY_COST_EUR` | Presupunerile pentru calculul de ROI din pagina de statistici |
 
 > `.env` conține chei secrete și este exclus din git. Nu îl urca și nu îl trimite nimănui.
+
+### De unde iei cheile AWS
+
+1. Intră pe [dashboard-ul AWS Workshop](https://catalog.us-east-1.prod.workshops.aws/event/dashboard/en-US/workshop).
+2. Apasă butonul **Get AWS CLI credentials**.
+3. Copiază valorile `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` și `AWS_SESSION_TOKEN` în `.env`, fără `export` și fără ghilimele (ex. `AWS_ACCESS_KEY_ID=ASIA...`).
+4. Repornește backend-ul: cheile se citesc doar la pornire.
+
+Cheile sunt temporare și expiră după câteva ore. Când agenții încep să meargă doar pe reguli și în log apare `ExpiredTokenException`, ia chei noi de la același buton.
 
 ---
 
