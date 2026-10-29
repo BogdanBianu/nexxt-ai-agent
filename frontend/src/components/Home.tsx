@@ -8,6 +8,7 @@ import { moduleOf, statusLabel, typeLabel } from "../lib/modules";
 import { caseTitle, EXCEPTION_LABEL, formatAgo, formatTime, STATUS_STYLE, type StatusTone } from "../lib/ui";
 import { BatchUpload } from "./BatchUpload";
 import { Mascot } from "./Mascot";
+import { RunAllScenarios } from "./RunAllScenarios";
 import { ServerDown } from "./ServerDown";
 
 interface Props {
@@ -102,6 +103,8 @@ export function Home({ onOpen }: Props) {
       <div className="mt-10">
         <BatchUpload onOpen={onOpen} onFinished={load} />
       </div>
+
+      <RunAllScenarios onProgress={load} />
 
       {error && !loaded ? (
         <ServerDown onRetry={load} />
