@@ -181,6 +181,12 @@ scripts/
 
 ## Echipa
 
-Proiect realizat de o echipă de 5 persoane: agenți AI și LangGraph, motor de reguli și backend, date sintetice și PDF-uri, frontend, Workbench HITL și pitch.
+Proiect realizat de echipa **Hegemind**:
+
+- Bălașa Ștefan-Daniel
+- Bianu Bogdan
+- Toderașc Octavian
+- Chiculița Rareș
+- Solomon Teodor
 
 > Temeiurile legale din reguli sunt pentru demonstrație și trebuie validate de un jurist înainte de orice utilizare reală.
