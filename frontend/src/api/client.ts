@@ -6,6 +6,7 @@ import type {
   Case,
   CaseSummary,
   ModuleInfo,
+  PlatformMetrics,
   ReviewAction,
   ScenarioInfo,
 } from "../types/contracts";
@@ -27,6 +28,7 @@ export const api = {
   listModules: () => json<ModuleInfo[]>("/api/modules"),
   listScenarios: () => json<ScenarioInfo[]>("/api/scenarios"),
   listCases: () => json<CaseSummary[]>("/api/cases"),
+  getMetrics: () => json<PlatformMetrics>("/api/metrics"),
   getCase: (caseId: string) => json<Case>(`/api/cases/${caseId}`),
   getCaseEvents: (caseId: string) => json<AgentEvent[]>(`/api/cases/${caseId}/events`),
   getCaseAudit: (caseId: string) => json<AuditEntry[]>(`/api/cases/${caseId}/audit`),

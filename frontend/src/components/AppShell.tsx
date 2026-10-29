@@ -1,12 +1,16 @@
 // Layout + bara galbenă LexOps. Modulele stau într-un meniu deschis din logo-ul Raiffeisen. Proprietar: Om4.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, CircleAlert, House } from "lucide-react";
+import { BarChart3, ChevronDown, CircleAlert, House } from "lucide-react";
 import { api } from "../api/client";
 import type { CaseSummary, ModuleInfo } from "../types/contracts";
 import { moduleOf } from "../lib/modules";
 import { STATUS_STYLE } from "../lib/ui";
 import logo from "../assets/logo_raiffeisen.png";
 import { Mascot } from "./Mascot";
+
+// Pagina de statistici nu e un modul juridic, dar se deschide din același meniu
+export const STATS_VIEW = "stats";
+const STATS_LABEL = "Statistici & Costuri API";
 
 interface Props {
   // Modulul afișat acum; null pe pagina de start
@@ -54,7 +58,7 @@ function ModuleMenu({ modules, current, onHome, onModule }: { modules: ModuleInf
 
   const active = modules.filter((m) => m.status === "ACTIVE");
   const planned = modules.filter((m) => m.status !== "ACTIVE");
-  const here = modules.find((m) => m.module_id === current)?.name;
+  const here = current === STATS_VIEW ? STATS_LABEL : modules.find((m) => m.module_id === current)?.name;
 
   return (
     <div ref={ref} className="relative flex min-w-0 items-center gap-3">
@@ -126,6 +130,28 @@ function ModuleMenu({ modules, current, onHome, onModule }: { modules: ModuleInf
               </button>
             );
           })}
+
+          <div className="mt-1 border-t border-line pt-1">
+            <button
+              role="menuitem"
+              onClick={() => go(() => onModule(STATS_VIEW))}
+              aria-current={current === STATS_VIEW ? "page" : undefined}
+              style={{ animationDelay: `${(active.length + 1) * 25}ms` }}
+              className={`group/item relative flex w-full animate-item-in items-start gap-3 px-4 py-2.5 text-left transition-colors duration-150 hover:bg-canvas ${current === STATS_VIEW ? "bg-sun-soft" : ""}`}
+            >
+              <span
+                className={`mt-1 h-4 w-1 shrink-0 rounded-full ${current === STATS_VIEW ? "bg-ink" : "bg-transparent group-hover/item:bg-ink/25"}`}
+                aria-hidden
+              />
+              <span className="min-w-0 flex-1">
+                <span className="display flex items-center gap-2 text-[15px]">
+                  <BarChart3 size={16} aria-hidden />
+                  {STATS_LABEL}
+                </span>
+                <span className="mt-0.5 line-clamp-1 text-xs text-muted">Telemetrie AWS Bedrock, consum tokeni și ROI</span>
+              </span>
+            </button>
+          </div>
 
           {planned.length > 0 && (
             <div className="mt-1 border-t border-line px-4 py-3">

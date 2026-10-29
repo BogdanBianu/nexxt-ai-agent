@@ -4,7 +4,8 @@ import { api } from "./api/client";
 import { AccountDissection } from "./components/AccountDissection";
 import { AgentPipeline } from "./components/AgentPipeline";
 import { ApprovalPanel } from "./components/ApprovalPanel";
-import { AppShell } from "./components/AppShell";
+import { AppShell, STATS_VIEW } from "./components/AppShell";
+import { StatisticsDashboard } from "./components/StatisticsDashboard";
 import { CaseFacts, CaseFigures, CaseHeader } from "./components/CaseHeader";
 import { AuditTrail } from "./components/AuditTrail";
 import { InsolvencyAccounts, InsolvencyFacts, InsolvencyFigures, InsolvencyMain } from "./components/InsolvencyPanels";
@@ -133,7 +134,9 @@ export default function App() {
   return (
     <AppShell current={navModule} onHome={home} onModule={goModule}>
       {!selectedId ? (
-        view ? (
+        view === STATS_VIEW ? (
+          <StatisticsDashboard />
+        ) : view ? (
           <CaseInbox key={view} moduleId={view} onOpen={open} />
         ) : (
           <Home onOpen={open} />
